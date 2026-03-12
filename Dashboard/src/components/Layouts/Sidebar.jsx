@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Home,
   Newspaper,
@@ -13,48 +14,45 @@ export default function Sidebar() {
   const [active, setActive] = useState("Home");
 
   const menuItems = [
-    { name: "Home", icon: Home },
-    { name: "Financial News", icon: Newspaper },
-    { name: "Budget Assistant", icon: Wallet },
-    { name: "Loan Assistant", icon: Banknote },
-    { name: "Investment Assistant", icon: TrendingUp },
-    { name: "Community", icon: Users }
+    { name: "Home", icon: Home, path: "/" },
+    { name: "Financial News", icon: Newspaper, path: "/financial-news" },
+    { name: "Budget Assistant", icon: Wallet, path: "/budget-assistant" },
+    { name: "Loan Assistant", icon: Banknote, path: "/loan-assistant" },
+    { name: "Investment Assistant", icon: TrendingUp, path: "/investment-assistant" },
+    { name: "Community", icon: Users, path: "/community" }
   ];
 
   return (
     <div className="h-screen w-64 bg-gray-950 text-gray-300 flex flex-col border-r border-gray-800">
 
-      {/* Logo / Title */}
-{/* Logo / Title */}
-<div className="p-6 text-2xl font-extrabold border-b border-gray-800">
-  <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-    AI SAATHI
-  </span>
-</div>
+      {/* Logo */}
+      <div className="p-6 text-2xl font-extrabold border-b border-gray-800">
+        <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+          AI SAATHI
+        </span>
+      </div>
 
-      {/* Menu Items */}
+      {/* Menu */}
       <div className="flex flex-col gap-2 p-4">
 
         {menuItems.map((item) => {
           const Icon = item.icon;
 
           return (
-            <button
-              key={item.name}
-              onClick={() => setActive(item.name)}
-              className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200
-              
-              ${
-                active === item.name
-                  ? "bg-gray-800 text-yellow-400"
-                  : "hover:bg-gray-800 hover:text-white"
-              }
-              
-              `}
-            >
-              <Icon size={22} />
-              <span className="font-medium text-sm">{item.name}</span>
-            </button>
+            <Link key={item.name} to={item.path}>
+              <button
+                onClick={() => setActive(item.name)}
+                className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200
+                ${
+                  active === item.name
+                    ? "bg-gray-800 text-yellow-400"
+                    : "hover:bg-gray-800 hover:text-white"
+                }`}
+              >
+                <Icon size={22} />
+                <span className="font-medium text-sm">{item.name}</span>
+              </button>
+            </Link>
           );
         })}
 
