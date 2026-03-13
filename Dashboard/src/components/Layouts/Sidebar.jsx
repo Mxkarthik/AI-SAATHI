@@ -12,11 +12,10 @@ import {
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
 
-  const [active, setActive] = useState("Home");
+  const [active, setActive] = useState("Financial News");
 
   const menuItems = [
-    { name: "Home", icon: Home, path: "/" },
-    { name: "Financial News", icon: Newspaper, path: "/financial-news" },
+    { name: "Financial News", icon: Newspaper, path: "/" },
     { name: "Budget Assistant", icon: Wallet, path: "/budget-assistant" },
     { name: "Loan Assistant", icon: Banknote, path: "/loan-assistant" },
     { name: "Investment Assistant", icon: TrendingUp, path: "/investment-assistant" },
@@ -33,8 +32,8 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
       />
 
       <div
-        className={`fixed inset-y-0 left-0 z-40 w-64 bg-gray-950 text-gray-300 flex flex-col border-r border-gray-800 transform transition-transform duration-200 md:static md:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-40 w-64 sm:w-72 md:w-80 bg-gray-950 text-gray-300 flex flex-col border-r border-gray-800 transform transition-transform duration-200 ${
+          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
 

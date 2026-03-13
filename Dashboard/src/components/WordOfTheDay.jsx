@@ -41,43 +41,45 @@ const WordOfTheDay = () => {
   };
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col items-center">
 
-      {/* Section heading */}
-      <div className="flex items-center gap-2 mb-8">
-        <KeyRound className="text-yellow-400 w-4 h-4 md:w-5 md:h-5" />
-        <h2 className="text-yellow-400 text-sm md:text-lg font-semibold tracking-wide">
+      {/* Section heading - Centered */}
+      <div className="flex items-center justify-center gap-2 mb-10">
+        <KeyRound className="text-yellow-400 w-5 h-5 md:w-6 md:h-6" />
+        <h2 className="text-yellow-400 text-lg md:text-xl font-bold tracking-wide">
           Words of the Day
         </h2>
       </div>
 
-      {/* Card Stack */}
-      <div className="relative w-full h-[30rem] sm:h-[35rem] md:h-[40rem]">
+      {/* Card Stack - Constrained and Centered */}
+      <div className="relative w-full max-w-sm sm:max-w-md md:max-w-lg h-[24rem]">
         {cards.map((card, index) => {
           const isFront = index === 0;
           return (
             <div
               key={index}
               onClick={rotateCards}
-              className={`absolute w-full h-48 sm:h-52 md:h-56 bg-yellow-400 border-4 border-white rounded-xl shadow-xl p-5 cursor-pointer transition-all duration-500
-                ${isFront && animating ? "translate-y-[-80px] rotate-[8deg]" : ""}`}
+              className={`absolute left-0 right-0 w-full h-56 sm:h-60 bg-yellow-400 border-4 border-white rounded-2xl shadow-2xl p-6 cursor-pointer transition-all duration-500 hover:scale-[1.02]
+                ${isFront && animating ? "translate-y-[-100px] opacity-0 rotate-[12deg]" : ""}`}
               style={{
-                top: `${(cards.length - 1 - index) * 20}px`,
-                transform: `rotate(${index * 1}deg)`,
+                top: `${(cards.length - 1 - index) * 12}px`,
+                transform: `rotate(${(index - cards.length / 2) * 1}deg)`,
                 zIndex: cards.length - index
               }}
             >
-              <h3 className="font-bold text-base md:text-lg text-black text-center">
-                {card.word}
-              </h3>
-              <p className="text-black text-sm mt-3 text-center leading-relaxed">
-                {card.desc}
-              </p>
-              {isFront && (
-                <p className="text-black/60 text-xs text-center mt-4 italic">
-                  Click to see next →
+              <div className="flex flex-col h-full justify-center">
+                <h3 className="font-extrabold text-xl md:text-2xl text-black text-center mb-4 uppercase tracking-tighter">
+                  {card.word}
+                </h3>
+                <p className="text-black text-sm md:text-base font-medium text-center leading-tight">
+                  {card.desc}
                 </p>
-              )}
+                {isFront && (
+                  <p className="text-black/40 text-xs text-center mt-6 font-bold animate-pulse">
+                    TAP TO ROTATE →
+                  </p>
+                )}
+              </div>
             </div>
           );
         })}
