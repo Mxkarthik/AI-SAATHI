@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+@keyframes newsScroll {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+.news-scroll {
+  animation: newsScroll 20s linear infinite;
+}
+
+.news-scroll:hover {
+  animation-play-state: paused;
+}
