@@ -8,9 +8,24 @@ const [income,setIncome] = useState("");
 const [period,setPeriod] = useState("");
 const [recording,setRecording] = useState(false);
 
+const [responses,setResponses] = useState([]);
+
 const startRecording = () => {
 setRecording(true);
 console.log("Recording started");
+
+// Fake AI questions + answers
+setResponses([
+{
+question: "Where should I invest if I have low risk?",
+answer: "You can invest in Fixed Deposits, Public Provident Fund (PPF), or Post Office Saving Schemes. These options provide stable returns and are safe for beginners."
+},
+{
+question: "Are there any government schemes for small investors?",
+answer: "Yes. You can consider schemes like Pradhan Mantri Jan Dhan Yojana, Sukanya Samriddhi Yojana, and Atal Pension Yojana which are designed for small investors."
+}
+]);
+
 };
 
 const stopRecording = () => {
@@ -23,11 +38,33 @@ console.log("Saved", {risk,income,period});
 };
 
 const getRecommendations = () => {
-console.log("Getting investment recommendations");
+
+setResponses([
+{
+question: "What is the best low risk investment?",
+answer: "Public Provident Fund (PPF) and Fixed Deposits are good low-risk investments with guaranteed returns."
+},
+{
+question: "How can I start investing with small income?",
+answer: "You can start SIP in mutual funds with as low as ₹500 per month or invest in government schemes."
+}
+]);
+
 };
 
 const getSchemeRecommendations = () => {
-console.log("Getting government schemes");
+
+setResponses([
+{
+question: "Which government scheme is good for farmers?",
+answer: "PM Kisan Samman Nidhi provides ₹6000 per year financial support to eligible farmers."
+},
+{
+question: "Which scheme helps with retirement savings?",
+answer: "Atal Pension Yojana helps individuals save for retirement with guaranteed pension benefits."
+}
+]);
+
 };
 
 return (
@@ -37,7 +74,6 @@ return (
 <h1 className="text-2xl font-semibold mb-6">
 Micro Investment & Government Scheme Recommendations
 </h1>
-
 
 <div className="grid lg:grid-cols-2 gap-6">
 
@@ -49,13 +85,9 @@ Micro Investment & Government Scheme Recommendations
 Micro Investment Suggestions
 </h2>
 
-
 <p className="mb-3 text-sm text-yellow-300">
 Risk Level
 </p>
-
-
-{/* Risk Cards */}
 
 <div className="grid grid-cols-3 gap-4 mb-6">
 
@@ -70,7 +102,6 @@ ${risk==="Low" ? "bg-yellow-400 text-black border-yellow-400" : "border-yellow-5
 <p className="text-xs">Safe & Steady</p>
 </div>
 
-
 <div
 onClick={()=>setRisk("Medium")}
 className={`p-4 rounded-lg border cursor-pointer flex flex-col items-center
@@ -81,7 +112,6 @@ ${risk==="Medium" ? "bg-yellow-400 text-black border-yellow-400" : "border-yello
 <p className="mt-2 font-semibold">Medium Risk</p>
 <p className="text-xs">Balanced Growth</p>
 </div>
-
 
 <div
 onClick={()=>setRisk("High")}
@@ -96,9 +126,6 @@ ${risk==="High" ? "bg-yellow-400 text-black border-yellow-400" : "border-yellow-
 
 </div>
 
-
-{/* Inputs */}
-
 <div className="grid md:grid-cols-2 gap-4 mb-4">
 
 <div>
@@ -111,7 +138,6 @@ className="w-full bg-black border border-yellow-500 rounded p-2 text-white"
 />
 </div>
 
-
 <div>
 <p className="text-sm mb-1">Investment Period (years)</p>
 <input
@@ -123,9 +149,6 @@ className="w-full bg-black border border-yellow-500 rounded p-2 text-white"
 </div>
 
 </div>
-
-
-{/* Buttons */}
 
 <div className="grid grid-cols-2 gap-4">
 
@@ -145,7 +168,6 @@ Save Preferences
 
 </div>
 
-
 <button
 onClick={getRecommendations}
 className="mt-4 w-full bg-yellow-400 text-black py-2 rounded font-semibold hover:bg-yellow-300"
@@ -155,7 +177,6 @@ Get Investment Recommendations
 
 </div>
 
-
 {/* RIGHT SECTION */}
 
 <div className="border border-yellow-500 bg-[#07150f] p-6 rounded-xl shadow-lg">
@@ -163,7 +184,6 @@ Get Investment Recommendations
 <h2 className="mb-4 font-semibold">
 Government Scheme Recommendations
 </h2>
-
 
 <div className="grid grid-cols-2 gap-4 mb-4">
 
@@ -183,7 +203,6 @@ className="bg-red-500 text-white py-2 rounded font-semibold hover:bg-red-400"
 
 </div>
 
-
 <button
 onClick={getSchemeRecommendations}
 className="w-full bg-yellow-400 text-black py-2 rounded font-semibold hover:bg-yellow-300"
@@ -191,11 +210,32 @@ className="w-full bg-yellow-400 text-black py-2 rounded font-semibold hover:bg-y
 Get Scheme Recommendation
 </button>
 
+{/* Fake AI Responses */}
+
+<div className="mt-6 space-y-4">
+
+{responses.map((item,index)=>(
+<div key={index} className="border border-yellow-500 p-4 rounded-lg bg-black">
+
+<p className="font-semibold text-yellow-300">
+🎤 User: {item.question}
+</p>
+
+<p className="mt-2 text-white">
+🤖 AI SAATHI: {item.answer}
+</p>
+
+</div>
+))}
+
+</div>
+
 </div>
 
 </div>
 
 </div>
+
 );
 };
 

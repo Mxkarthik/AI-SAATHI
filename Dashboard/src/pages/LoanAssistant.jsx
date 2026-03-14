@@ -1,140 +1,208 @@
-import React from "react";
-import { Building2, Landmark, PiggyBank } from "lucide-react";
+import React, { useState, useRef } from "react";
+import { Building2, Landmark, Mic } from "lucide-react";
 import andhraBank from "../assets/andhrabank.png";
+
 const LoanAssistant = () => {
-  return (
-    <div className="min-h-screen bg-black text-yellow-400 p-6">
 
-      {/* Main Grid */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* LEFT SIDE */}
-        <div className="border border-yellow-500 rounded-xl p-6 bg-[#07150f] shadow-lg">
+const [query,setQuery] = useState("")
+const [submitted,setSubmitted] = useState(false)
+const recognitionRef = useRef(null)
 
-          <h2 className="text-xl font-semibold mb-6">
-            Select Your Bank
-          </h2>
+const startRecording = () => {
 
-          {/* Bank Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+const SpeechRecognition =
+window.SpeechRecognition || window.webkitSpeechRecognition
 
-            <div className="border border-yellow-500 rounded-lg p-6 flex flex-col items-center hover:bg-black transition">
-            <img
-            src={andhraBank}
-            alt="Andhra Bank"
-            className="w-12 h-12 object-contain"
-            />
-              <p className="mt-3">Andhra Bank</p>
-            </div>
+if(!SpeechRecognition){
+alert("Speech recognition not supported in this browser")
+return
+}
 
-            <div className="border border-yellow-500 rounded-lg p-6 flex flex-col items-center hover:bg-black transition">
-              <Building2 size={40} />
-              <p className="mt-3">Bank of Baroda</p>
-            </div>
+const recognition = new SpeechRecognition()
 
-            <div className="border border-yellow-500 rounded-lg p-6 flex flex-col items-center hover:bg-black transition">
-              <Landmark size={40} />
-              <p className="mt-3">Punjab National Bank</p>
-            </div>
+recognition.lang = "te-IN" // Telugu
+recognition.continuous = false
+recognition.interimResults = false
 
-          </div>
+recognition.onresult = (event) => {
 
-          <p className="mb-4 text-yellow-300">
-            Bank Contact
-          </p>
+const transcript = event.results[0][0].transcript
 
-          <div className="flex gap-4">
+setQuery(transcript)
+setSubmitted(true)
 
-            <button className="bg-yellow-400 text-black px-5 py-2 rounded font-semibold hover:bg-yellow-300">
-              🎤 Start Recording
-            </button>
+}
 
-            <button className="bg-yellow-400 text-black px-5 py-2 rounded font-semibold hover:bg-yellow-300">
-              ▶ Play Response
-            </button>
+recognition.start()
 
-          </div>
+recognitionRef.current = recognition
+}
 
-        </div>
+const handleSubmit = () => {
+setSubmitted(true)
+}
+
+const sendToWhatsApp = () => {
+
+const message = `
+AI-SAATHI Loan Application
+
+Loan Type: Agriculture Tractor Loan
+Monthly Income: ₹7000
+Suggested Bank: Andhra Bank
+Eligible Loan Amount: ₹2L - ₹4L
+`
+
+const phone = "919876543210"
+
+const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+
+window.open(url,"_blank")
+}
+
+return (
+
+<div className="min-h-screen bg-black text-yellow-400 p-6">
+
+<div className="grid lg:grid-cols-2 gap-6">
+
+{/* LEFT */}
+
+<div className="border border-yellow-500 rounded-xl p-6 bg-[#07150f]">
+
+<h2 className="text-xl font-semibold mb-6">
+Select Your Bank
+</h2>
+
+<div className="grid grid-cols-3 gap-4 mb-6">
+
+<div className="border border-yellow-500 rounded-lg p-6 flex flex-col items-center">
+
+<img
+src={andhraBank}
+alt="Andhra Bank"
+className="w-12 h-12 object-contain"
+/>
+
+<p className="mt-3">Andhra Bank</p>
+
+</div>
+
+<div className="border border-yellow-500 rounded-lg p-6 flex flex-col items-center">
+
+<Building2 size={40}/>
+<p className="mt-3">Bank of Baroda</p>
+
+</div>
+
+<div className="border border-yellow-500 rounded-lg p-6 flex flex-col items-center">
+
+<Landmark size={40}/>
+<p className="mt-3">Punjab National Bank</p>
+
+</div>
+
+</div>
+
+<input
+type="text"
+placeholder="Ask about loan..."
+className="bg-black border border-yellow-500 text-white rounded px-3 py-2 w-full mb-4"
+value={query}
+onChange={(e)=>setQuery(e.target.value)}
+/>
+
+<div className="flex gap-4">
+
+<button
+onClick={handleSubmit}
+className="bg-yellow-400 text-black px-5 py-2 rounded font-semibold hover:bg-yellow-300"
+>
+
+Submit Query
+
+</button>
+
+<button
+onClick={startRecording}
+className="bg-red-500 text-white px-5 py-2 rounded font-semibold flex items-center gap-2"
+>
+
+<Mic size={18}/> Start Recording
+
+</button>
+
+</div>
+
+</div>
 
 
-        {/* RIGHT SIDE */}
+{/* RIGHT */}
 
-        <div className="space-y-6">
+<div className="space-y-6">
 
-          {/* Chat History */}
-          <div className="border border-yellow-500 rounded-xl p-4 bg-[#07150f]">
-            <h3 className="mb-3 font-semibold">
-              Chat History
-            </h3>
+<div className="border border-yellow-500 rounded-xl p-4 bg-[#07150f]">
 
-            <div className="bg-black border border-yellow-500 rounded-lg h-12"></div>
-          </div>
+<h3 className="mb-3 font-semibold">
+Chat History
+</h3>
 
+<div className="bg-black border border-yellow-500 rounded-lg p-3 text-sm">
 
-          {/* Extracted Data */}
+{submitted ? query : "No conversation yet"}
 
-          <div className="border border-yellow-500 rounded-xl p-6 bg-[#07150f]">
+</div>
 
-            <h3 className="mb-3 font-semibold">
-              Extracted Data
-            </h3>
-
-            <div className="text-gray-400 text-sm">
-              No data extracted yet. Upload an image or use the webcam.
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
+</div>
 
 
-      {/* Bottom Section */}
+<div className="border border-yellow-500 rounded-xl p-6 bg-[#07150f]">
 
-      <div className="grid md:grid-cols-2 gap-6 mt-8">
+<h3 className="mb-3 font-semibold">
+Loan Application Result
+</h3>
 
-        {/* Webcam */}
-        <div className="border border-yellow-500 rounded-xl p-6 bg-[#07150f]">
+{submitted ? (
 
-          <h3 className="mb-4 font-semibold">
-            Capture Using Webcam
-          </h3>
+<div className="text-white text-sm space-y-2">
 
-          <button className="bg-yellow-400 text-black px-6 py-2 rounded font-semibold hover:bg-yellow-300">
-            Show Webcam
-          </button>
+<p>Loan Type: Agriculture Tractor Loan</p>
 
-        </div>
+<p>Monthly Income: ₹7000</p>
 
+<p>Suggested Bank: Andhra Bank</p>
 
-        {/* Upload Document */}
+<p>Eligible Loan Amount: ₹2L - ₹4L</p>
 
-        <div className="border border-yellow-500 rounded-xl p-6 bg-[#07150f]">
+<button
+onClick={sendToWhatsApp}
+className="mt-4 bg-green-500 text-white px-5 py-2 rounded font-semibold hover:bg-green-400"
+>
 
-          <h3 className="mb-4 font-semibold">
-            Upload Document
-          </h3>
+Send to Bank on WhatsApp
 
-          <div className="flex items-center gap-3 mb-4">
+</button>
 
-            <input
-              type="file"
-              className="bg-black border border-yellow-500 text-white rounded px-2 py-1"
-            />
+</div>
 
-          </div>
+) : (
 
-          <button className="bg-yellow-400 text-black px-6 py-2 rounded font-semibold hover:bg-yellow-300">
-            Upload Document
-          </button>
+<div className="text-gray-400 text-sm">
+Speak or type a query to see results.
+</div>
 
-        </div>
+)}
 
-      </div>
+</div>
 
-    </div>
-  );
-};
+</div>
 
-export default LoanAssistant;
+</div>
+
+</div>
+
+)
+
+}
+
+export default LoanAssistant
