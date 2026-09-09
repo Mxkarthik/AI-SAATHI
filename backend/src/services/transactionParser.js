@@ -23,7 +23,17 @@ const TENS = {
   eighty: 80, ninety: 90,
 };
 const MULTIPLIERS = {
-  hundred: 100, thousand: 1000, lakh: 100000, lac: 100000, crore: 10000000,
+  hundred: 100, thousand: 1000,
+  lakh: 100000, lac: 100000, lakhs: 100000,
+  // Telugu
+  "లక్ష": 100000, "లక్షలు": 100000,
+  "వేల": 1000, "వేలు": 1000,
+  "కోటి": 10000000,
+  // Hindi
+  "लाख": 100000, "लाखों": 100000,
+  "हज़ार": 1000, "हजार": 1000,
+  "करोड़": 10000000, "करोड": 10000000,
+  crore: 10000000,
 };
 
 function wordsToNumber(text) {
@@ -65,18 +75,24 @@ function wordsToNumber(text) {
 // Amount extraction
 // ---------------------------------------------------------------------------
 function extractAmount(text) {
-  // Digit followed by a scale word, e.g. "5 lakh", "2.5 crore", "3 thousand".
-  // Must be checked BEFORE the bare-digit match below, otherwise "5 lakh"
-  // would be read as just "5".
-  const scaleMatch = text.match(/(\d+(?:\.\d+)?)\s*(thousand|lakh|lac|crore|hundred)\b/);
+  // Build a regex that matches any multiplier word (English + Telugu + Hindi)
+  const multiplierPattern = Object.keys(MULTIPLIERS)
+    .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+
+  // "5 lakh", "2 లక్షలు", "3 लाख" etc.
+  const scaleRegex = new RegExp(
+    `(\\d+(?:\\.\\d+)?)\\s*(${multiplierPattern})\\b`,
+    "u"
+  );
+  const scaleMatch = text.match(scaleRegex);
   if (scaleMatch) {
     const base = parseFloat(scaleMatch[1]);
     const multiplier = MULTIPLIERS[scaleMatch[2]];
     if (!isNaN(base) && multiplier) return base * multiplier;
   }
 
-  // Digits, optionally with thousands separators and a decimal part.
-  // e.g. 250, 15,000, 1500.50, ₹350, Rs. 500
+  // Plain digits: 250, 15,000, 1500.50, ₹350, Rs.500
   const digitMatch = text.match(/\d[\d,]*(?:\.\d+)?/);
   if (digitMatch) {
     const cleaned = digitMatch[0].replace(/,/g, "");
@@ -84,7 +100,7 @@ function extractAmount(text) {
     if (!isNaN(value) && value > 0) return value;
   }
 
-  // Fall back to spoken numbers, e.g. "five hundred rupees"
+  // Spoken English numbers: "five hundred", "two thousand"
   const wordValue = wordsToNumber(text);
   if (wordValue && wordValue > 0) return wordValue;
 
@@ -96,15 +112,52 @@ function extractAmount(text) {
 // ---------------------------------------------------------------------------
 const SAVING_WORDS = [
   "saved", "savings", "save", "put aside", "keep aside", "set aside",
+  "దాచాను", "దాచుకున్నాను", "జమ చేసాను",
+  "बचाया", "बचत",
 ];
+
 const EARNING_WORDS = [
-  "earned", "earning", "earnings", "income", "received", "got", "credited",
-  "salary", "wages", "wage", "pay", "sampadhana", "సంపాదన",
+  // English
+  "earned", "earning", "earnings", "earn",
+  "income", "received", "receive", "got", "get",
+  "credited", "credit",
+  "salary", "salaries", "wages", "wage",
+  "pay", "payment", "paycheck", "stipend",
+  "profit", "revenue", "commission",
+  "came in", "got paid", "been paid",
+  // Telugu
+  "sampadhana", "సంపాదన", "వచ్చింది", "వచ్చాయి",
+  "సంపాదించాను", "సంపాదించాలి", "జీతం", "జీతమ్",
+  "అందుకున్నాను", "వేతనం",
+  // Hindi
+  "कमाया", "कमाई", "मिला", "मिली", "मिले",
+  "तनख्वाह", "वेतन", "आमदनी", "प्राप्त",
 ];
+
 const EXPENSE_WORDS = [
-  "spent", "spend", "paid", "pay for", "expense", "expenditure", "cost",
-  "bought", "buy", "purchase", "purchased", "buying", "kharche", "karchu", "ఖర్చు",
-  "invested in", "invest in", "deposited", "given", "gave", "spent on",
+  // English
+  "spent", "spend", "spending",
+  "paid", "pay", "paying",
+  "expense", "expenses", "expenditure",
+  "cost", "costs",
+  "bought", "buy", "buying", "buyed",
+  "purchase", "purchased", "purchasing",
+  "invested", "invest", "investing",
+  "deposited", "deposit",
+  "given", "gave", "give",
+  "lost", "lent",
+  "used", "used for",
+  "taken", "took",
+  // Telugu
+  "kharche", "karchu", "ఖర్చు", "ఖర్చుచేసాను",
+  "కొన్నాను", "కొన్నాం", "కొనుగోలు",
+  "చెల్లించాను", "చెల్లించాం",
+  "వెచ్చించాను", "పెట్టాను",
+  // Hindi
+  "खर्च", "खर्चा", "खर्चे",
+  "खरीदा", "खरीदी", "ख़रीदा",
+  "दिया", "दिए", "दी",
+  "भुगतान",
 ];
 
 function detectType(lowerText) {
@@ -118,22 +171,72 @@ function detectType(lowerText) {
 // Category detection
 // ---------------------------------------------------------------------------
 const CATEGORY_KEYWORDS = [
-  { label: "Food", keywords: ["food", "groceries", "grocery", "vegetables", "vegetable", "fruits", "fruit", "restaurant", "lunch", "dinner", "breakfast", "snacks", "snack", "meal", "eating", "hotel", "sweets", "bakery", "juice", "milk", "egg", "eggs", "rice", "dal", "bread", "masala"] },
-  { label: "Transport", keywords: ["transport", "bus", "train", "auto", "taxi", "fuel", "petrol", "diesel", "cab", "bike", "vehicle", "scooter", "travel", "uber", "ola", "flight", "ticket", "parking", "toll"] },
-  { label: "Education", keywords: ["college", "school", "books", "book", "fees", "fee", "course", "tuition", "exam", "coaching", "university", "degree", "study", "studies", "stationery", "notebook", "pen"] },
-  { label: "Medical", keywords: ["medicine", "medicines", "doctor", "hospital", "medical", "pharmacy", "clinic", "health", "surgery", "treatment", "test", "lab", "injection", "ambulance", "nursing"] },
-  { label: "Shopping", keywords: ["clothes", "clothing", "shoes", "shopping", "shirt", "pant", "saree", "kurta", "dress", "jeans", "jacket", "bag", "watch", "jewellery", "jewelry", "gold", "silver", "mobile", "phone", "laptop", "electronics", "gadget", "appliance"] },
-  { label: "Bills", keywords: ["electricity", "water bill", "internet", "mobile bill", "recharge", "bill", "bills", "wifi", "broadband", "subscription", "ott", "netflix", "amazon prime", "insurance", "emi", "loan emi", "credit card"] },
-  { label: "Housing", keywords: ["rent", "house rent", "maintenance", "society", "flat rent", "pg", "hostel", "accommodation"] },
-  { label: "Land & Property", keywords: ["land", "property", "plot", "site", "acre", "gunta", "cents", "registration", "stamp duty", "house purchase", "flat purchase", "apartment", "villa", "bungalow", "real estate", "ground", "agriculture land", "farm land"] },
-  { label: "Home", keywords: ["house", "home", "furniture", "sofa", "bed", "table", "chair", "almirah", "cupboard", "fridge", "tv", "washing machine", "construction", "renovation", "painting", "repair", "tiles", "cement", "brick", "rod", "iron", "wood", "plumber", "electrician", "labour"] },
-  { label: "Vehicle", keywords: ["car", "bike purchase", "two wheeler", "four wheeler", "vehicle purchase", "car purchase", "bike buy", "car buy", "auto purchase", "truck", "tractor purchase"] },
-  { label: "Farming", keywords: ["seeds", "seed", "fertilizer", "fertilizers", "farm", "farming", "tractor", "pesticide", "irrigation", "crop", "harvest", "field", "agriculture", "cattle", "cow", "buffalo", "goat", "poultry"] },
-  { label: "Salary", keywords: ["salary", "wages", "wage", "stipend", "paycheck"] },
-  { label: "Business", keywords: ["business", "investment", "stock", "shares", "mutual fund", "fd", "fixed deposit", "startup", "shop", "store", "office", "raw material", "inventory", "goods", "trade", "export", "import"] },
-  { label: "Events", keywords: ["wedding", "marriage", "function", "ceremony", "birthday", "party", "celebration", "festival", "diwali", "eid", "christmas", "puja", "pooja", "engagement", "reception"] },
-  { label: "Charity", keywords: ["donation", "donate", "charity", "temple", "church", "mosque", "trust", "ngo", "help", "giving"] },
-  { label: "Savings", keywords: ["savings", "saving", "piggy bank", "chit fund", "recurring deposit", "rd", "ppf", "provident fund"] },
+  { label: "Food", keywords: ["food", "groceries", "grocery", "vegetables", "vegetable", "fruits", "fruit", "restaurant", "lunch", "dinner", "breakfast", "snacks", "snack", "meal", "eating", "hotel", "sweets", "bakery", "juice", "milk", "egg", "eggs", "rice", "dal", "bread", "masala",
+    // Telugu
+    "అన్నం", "తిండి", "కూరగాయలు", "పండ్లు", "హోటల్",
+    // Hindi
+    "खाना", "खाने", "सब्जी", "फल", "दूध", "चावल",
+  ]},
+  { label: "Transport", keywords: ["transport", "bus", "train", "auto", "taxi", "fuel", "petrol", "diesel", "cab", "bike", "vehicle", "scooter", "travel", "uber", "ola", "flight", "ticket", "parking", "toll",
+    "బస్సు", "రైలు", "పెట్రోల్", "డీజిల్",
+    "बस", "ट्रेन", "पेट्रोल", "डीजल", "टैक्सी",
+  ]},
+  { label: "Education", keywords: ["college", "school", "books", "book", "fees", "fee", "course", "tuition", "exam", "coaching", "university", "degree", "study", "studies", "stationery", "notebook", "pen",
+    "చదువు", "స్కూల్", "కాలేజ్", "ఫీజు", "పుస్తకాలు",
+    "पढ़ाई", "स्कूल", "कॉलेज", "फीस", "किताब",
+  ]},
+  { label: "Medical", keywords: ["medicine", "medicines", "doctor", "hospital", "medical", "pharmacy", "clinic", "health", "surgery", "treatment", "test", "lab", "injection", "ambulance", "nursing",
+    "వైద్యం", "డాక్టర్", "ఆసుపత్రి", "మందులు",
+    "दवाई", "दवा", "डॉक्टर", "अस्पताल", "इलाज",
+  ]},
+  { label: "Shopping", keywords: ["clothes", "clothing", "shoes", "shopping", "shirt", "pant", "saree", "kurta", "dress", "jeans", "jacket", "bag", "watch", "jewellery", "jewelry", "gold", "silver", "mobile", "phone", "laptop", "electronics", "gadget", "appliance",
+    "బట్టలు", "చీర", "బంగారం", "మొబైల్",
+    "कपड़े", "साड़ी", "सोना", "मोबाइल", "फोन",
+  ]},
+  { label: "Bills", keywords: ["electricity", "water bill", "internet", "mobile bill", "recharge", "bill", "bills", "wifi", "broadband", "subscription", "ott", "netflix", "amazon prime", "insurance", "emi", "loan emi", "credit card",
+    "కరెంట్ బిల్లు", "విద్యుత్", "రీచార్జ్",
+    "बिजली", "बिल", "रिचार्ज", "बीमा",
+  ]},
+  { label: "Housing", keywords: ["rent", "house rent", "maintenance", "society", "flat rent", "pg", "hostel", "accommodation",
+    "అద్దె", "ఇల్లు అద్దె",
+    "किराया", "मकान",
+  ]},
+  { label: "Land & Property", keywords: ["land", "property", "plot", "site", "acre", "gunta", "cents", "registration", "stamp duty", "house purchase", "flat purchase", "apartment", "villa", "bungalow", "real estate", "ground", "agriculture land", "farm land",
+    "భూమి", "స్థలం", "జమీన్", "ఆస్తి",
+    "जमीन", "प्लॉट", "संपत्ति", "भूमि", "जायदाद",
+  ]},
+  { label: "Home", keywords: ["house", "home", "furniture", "sofa", "bed", "table", "chair", "almirah", "cupboard", "fridge", "tv", "washing machine", "construction", "renovation", "painting", "repair", "tiles", "cement", "brick", "rod", "iron", "wood", "plumber", "electrician", "labour",
+    "ఇల్లు", "ఫర్నీచర్", "నిర్మాణం",
+    "घर", "फर्नीचर", "निर्माण", "मरम्मत",
+  ]},
+  { label: "Vehicle", keywords: ["car", "bike purchase", "two wheeler", "four wheeler", "vehicle purchase", "car purchase", "bike buy", "car buy", "auto purchase", "truck", "tractor purchase",
+    "కారు", "బైక్", "వాహనం",
+    "कार", "बाइक", "वाहन", "ट्रक",
+  ]},
+  { label: "Farming", keywords: ["seeds", "seed", "fertilizer", "fertilizers", "farm", "farming", "tractor", "pesticide", "irrigation", "crop", "harvest", "field", "agriculture", "cattle", "cow", "buffalo", "goat", "poultry",
+    "విత్తనాలు", "ఎరువు", "వ్యవసాయం", "పంట", "రైతు",
+    "बीज", "खाद", "खेती", "फसल", "किसान", "ट्रैक्टर",
+  ]},
+  { label: "Salary", keywords: ["salary", "wages", "wage", "stipend", "paycheck",
+    "జీతం", "వేతనం",
+    "तनख्वाह", "वेतन",
+  ]},
+  { label: "Business", keywords: ["business", "investment", "stock", "shares", "mutual fund", "fd", "fixed deposit", "startup", "shop", "store", "office", "raw material", "inventory", "goods", "trade", "export", "import",
+    "వ్యాపారం", "దుకాణం",
+    "व्यापार", "दुकान", "निवेश",
+  ]},
+  { label: "Events", keywords: ["wedding", "marriage", "function", "ceremony", "birthday", "party", "celebration", "festival", "diwali", "eid", "christmas", "puja", "pooja", "engagement", "reception",
+    "పెళ్లి", "వేడుక", "పుట్టినరోజు", "పూజ",
+    "शादी", "विवाह", "जन्मदिन", "पूजा", "त्योहार",
+  ]},
+  { label: "Charity", keywords: ["donation", "donate", "charity", "temple", "church", "mosque", "trust", "ngo", "help", "giving",
+    "దాన్", "దేవాలయం", "మసీదు",
+    "दान", "मंदिर", "मस्जिद", "चर्च",
+  ]},
+  { label: "Savings", keywords: ["savings", "saving", "piggy bank", "chit fund", "recurring deposit", "rd", "ppf", "provident fund",
+    "దాచుకున్నాను", "పొదుపు",
+    "बचत", "जमा",
+  ]},
 ];
 
 const FLAT_CATEGORY_KEYWORDS = CATEGORY_KEYWORDS.flatMap((entry) =>
