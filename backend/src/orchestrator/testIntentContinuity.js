@@ -170,6 +170,8 @@ const PROFILE_PARTIAL = {
     assertEq(result.status, "needs_information", "status = needs_information (NOT ready_for_decision)");
     assertEq(result.conversationState.intent, "crop_financing", "state intent preserved after fallback");
     assertEq(result.conversationState.stage, "information_collection", "state stage after fallback");
+    assertEq(result.decisionContext.intent, "crop_financing", "decision context intent preserved after fallback");
+    assertEq(result.decisionContext.status, "incomplete", "decision context status after fallback");
   });
 
   // TEST 3: Provider fallback + season entity in message → season not in missingFields

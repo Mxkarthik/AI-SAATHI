@@ -72,6 +72,7 @@ const { analyzeInformationGap } = require("./informationGap/informationGapServic
 const { getNextQuestion }     = require("./questions/nextQuestionService");
 const { deriveConversationState } = require("./state/conversationStateService");
 const { deriveProfileSync } = require("./profileSync/profileSyncService");
+const { buildDecisionContext } = require("./decisionContext/decisionContextService");
 const profileService = require("../services/profileService");
 
 // ─── Intent continuity ────────────────────────────────────────────────────────
@@ -230,6 +231,11 @@ async function orchestrate(params) {
       informationGap,
       nextQuestion,
     });
+    const decisionContext = buildDecisionContext({
+      context,
+      informationGap,
+      conversationState,
+    });
 
     return {
       status:         "ready_for_decision",
@@ -240,6 +246,7 @@ async function orchestrate(params) {
       informationGap,
       nextQuestion,
       conversationState,
+      decisionContext,
       profileSync,
     };
   }
@@ -259,6 +266,11 @@ async function orchestrate(params) {
     informationGap,
     nextQuestion,
   });
+  const decisionContext = buildDecisionContext({
+    context,
+    informationGap,
+    conversationState,
+  });
 
   return {
     status:         "needs_information",
@@ -269,6 +281,7 @@ async function orchestrate(params) {
     informationGap,
     nextQuestion,
     conversationState,
+    decisionContext,
     profileSync,
   };
 }
