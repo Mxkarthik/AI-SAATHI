@@ -20,7 +20,13 @@
  *       │
  *       ▼
  *   understandingService.understandMessage(message)
- *       │  → { language, intent, entities }
+ *       │  → { language, intent, entities, provider }
+ *       ▼
+ *   [INTENT CONTINUITY]
+ *   If provider = "fallback" AND conversation.intent is already set:
+ *       preserve conversation.intent (temporary failure ≠ intent change)
+ *   If provider = "fallback" AND conversation.language is already set:
+ *       preserve conversation.language
  *       ▼
  *   contextService.buildContext({ profile, conversation, understanding })
  *       │  → normalised context (knownFields, currentMessage, …)
@@ -42,7 +48,7 @@
  *   status        : "needs_information",
  *   language      : "en" | "te",
  *   intent        : string,
- *   understanding : { language, intent, entities },
+ *   understanding : { language, intent, entities, provider },
  *   context       : <normalised context from contextService>,
  *   informationGap: { requiredFields, collectedFields, missingFields, isComplete },
  *   nextQuestion  : { field, question, language, source } | null,
@@ -53,7 +59,7 @@
  *   status        : "ready_for_decision",
  *   language      : "en" | "te",
  *   intent        : string,
- *   understanding : { language, intent, entities },
+ *   understanding : { language, intent, entities, provider },
  *   context       : <normalised context from contextService>,
  *   informationGap: { requiredFields, collectedFields, missingFields, isComplete },
  *   nextQuestion  : null,
@@ -64,6 +70,61 @@ const understandingService   = require("./understanding/understandingService");
 const { buildContext }        = require("./context/contextService");
 const { analyzeInformationGap } = require("./informationGap/informationGapService");
 const { getNextQuestion }     = require("./questions/nextQuestionService");
+
+// ─── Intent continuity ────────────────────────────────────────────────────────
+
+/**
+ * A "meaningful" intent is any intent stored on the conversation that is
+ * not the generic fallback value.  This ensures we never accidentally lock
+ * a conversation into the generic intent by treating it as authoritative.
+ */
+const FALLBACK_INTENT = "general_financial_guidance";
+
+/**
+ * Apply intent continuity after a provider failure.
+ *
+ * Rules:
+ *  1. If the understanding provider succeeded (provider !== "fallback"),
+ *     trust the result as-is — no continuity logic needed.
+ *  2. If the provider failed (provider === "fallback"):
+ *     a. INTENT: if the conversation already has a meaningful intent
+ *        (non-null, non-fallback), preserve it by overwriting the
+ *        understanding's fallback intent.  The regex-based entity
+ *        extraction (entities: {}) is still usable for whatever it got.
+ *     b. LANGUAGE: the fallback language comes from the existing reliable
+ *        regex (detectLanguageFallback) so it is still trustworthy.
+ *        We do NOT override the regex language result with the conversation
+ *        language, because that would break language-switching mid-session.
+ *        The language field in the fallback result is reliable regardless.
+ *
+ * @param {object} understanding — result from understandingService
+ * @param {object} conversation  — Conversation document / plain object
+ * @returns {object}             — potentially-patched understanding object
+ */
+function applyConversationContinuity(understanding, conversation) {
+  // Provider succeeded — nothing to patch
+  if (understanding.provider !== "fallback") return understanding;
+
+  const existingIntent = conversation && conversation.intent;
+  const isMeaningfulExistingIntent =
+    existingIntent &&
+    typeof existingIntent === "string" &&
+    existingIntent !== FALLBACK_INTENT;
+
+  if (!isMeaningfulExistingIntent) {
+    // No useful existing intent — keep the fallback result unchanged
+    return understanding;
+  }
+
+  // Provider failed but conversation has a real intent: preserve it.
+  // We return a new object so we never mutate the understanding result.
+  return {
+    ...understanding,
+    intent: existingIntent,
+  };
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
  * Run one orchestration turn.
@@ -105,6 +166,13 @@ async function orchestrate(params) {
     wrapped.cause = err;
     throw wrapped;
   }
+
+  // ── Step 1b: Intent continuity ────────────────────────────────────────────
+  // If the AI provider failed and the conversation already has a meaningful
+  // intent, preserve that intent rather than downgrading to the generic
+  // fallback.  This prevents a temporary quota/network failure from
+  // resetting an in-progress consultation to "ready_for_decision" incorrectly.
+  understanding = applyConversationContinuity(understanding, conversation);
 
   const language = understanding.language || "en";
 
