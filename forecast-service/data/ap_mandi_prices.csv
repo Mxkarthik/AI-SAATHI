@@ -1,0 +1,67 @@
+﻿State,District,Market,Commodity,Variety,Arrival_Date,Min_Price,Max_Price,Modal_Price
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-06-01,2700,2900,2800
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-06-05,2720,2920,2810
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-06-10,2750,2950,2830
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-06-15,2740,2960,2840
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-06-20,2760,2980,2850
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-06-25,2780,3000,2870
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-07-01,2800,3020,2890
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-07-07,2820,3050,2910
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-07-14,2810,3040,2900
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-07-21,2830,3070,2930
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-07-28,2850,3090,2950
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-08-04,2870,3110,2970
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-08-11,2860,3100,2960
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-08-18,2880,3130,2980
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-08-25,2900,3150,3010
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-09-01,2910,3160,3020
+Andhra Pradesh,Guntur,Guntur,Rice,Common,2026-09-06,2920,3180,3040
+Andhra Pradesh,Guntur,Guntur Mirchi Yard,Chilli,Guntur Sannam,2026-06-01,16500,18000,17200
+Andhra Pradesh,Guntur,Guntur Mirchi Yard,Chilli,Guntur Sannam,2026-06-10,16700,18200,17400
+Andhra Pradesh,Guntur,Guntur Mirchi Yard,Chilli,Guntur Sannam,2026-06-20,17000,18500,17600
+Andhra Pradesh,Guntur,Guntur Mirchi Yard,Chilli,Guntur Sannam,2026-07-01,17200,18800,17900
+Andhra Pradesh,Guntur,Guntur Mirchi Yard,Chilli,Guntur Sannam,2026-07-15,17500,19100,18200
+Andhra Pradesh,Guntur,Guntur Mirchi Yard,Chilli,Guntur Sannam,2026-08-01,17800,19400,18500
+Andhra Pradesh,Guntur,Guntur Mirchi Yard,Chilli,Guntur Sannam,2026-08-15,18100,19700,18700
+Andhra Pradesh,Guntur,Guntur Mirchi Yard,Chilli,Guntur Sannam,2026-09-01,18300,19900,18900
+Andhra Pradesh,Guntur,Guntur Mirchi Yard,Chilli,Guntur Sannam,2026-09-06,18500,20200,19100
+Andhra Pradesh,Kurnool,Adoni,Cotton,Medium Staple,2026-06-01,6800,7200,7000
+Andhra Pradesh,Kurnool,Adoni,Cotton,Medium Staple,2026-06-15,6850,7250,7050
+Andhra Pradesh,Kurnool,Adoni,Cotton,Medium Staple,2026-07-01,6900,7300,7100
+Andhra Pradesh,Kurnool,Adoni,Cotton,Medium Staple,2026-07-15,6950,7380,7150
+Andhra Pradesh,Kurnool,Adoni,Cotton,Medium Staple,2026-08-01,7000,7420,7200
+Andhra Pradesh,Kurnool,Adoni,Cotton,Medium Staple,2026-08-15,7050,7480,7240
+Andhra Pradesh,Kurnool,Adoni,Cotton,Medium Staple,2026-09-01,7100,7550,7300
+Andhra Pradesh,Kurnool,Adoni,Cotton,Medium Staple,2026-09-06,7120,7580,7320
+Andhra Pradesh,Anantapur,Anantapur,Groundnut,Pod,2026-06-01,6100,6500,6300
+Andhra Pradesh,Anantapur,Anantapur,Groundnut,Pod,2026-06-15,6150,6550,6340
+Andhra Pradesh,Anantapur,Anantapur,Groundnut,Pod,2026-07-01,6200,6600,6390
+Andhra Pradesh,Anantapur,Anantapur,Groundnut,Pod,2026-07-15,6260,6680,6430
+Andhra Pradesh,Anantapur,Anantapur,Groundnut,Pod,2026-08-01,6300,6720,6480
+Andhra Pradesh,Anantapur,Anantapur,Groundnut,Pod,2026-08-15,6350,6780,6520
+Andhra Pradesh,Anantapur,Anantapur,Groundnut,Pod,2026-09-01,6400,6840,6570
+Andhra Pradesh,Anantapur,Anantapur,Groundnut,Pod,2026-09-06,6420,6870,6600
+Andhra Pradesh,Kurnool,Kurnool,Maize,Yellow,2026-06-01,2100,2300,2180
+Andhra Pradesh,Kurnool,Kurnool,Maize,Yellow,2026-06-15,2120,2320,2200
+Andhra Pradesh,Kurnool,Kurnool,Maize,Yellow,2026-07-01,2150,2350,2230
+Andhra Pradesh,Kurnool,Kurnool,Maize,Yellow,2026-07-15,2170,2380,2250
+Andhra Pradesh,Kurnool,Kurnool,Maize,Yellow,2026-08-01,2190,2400,2270
+Andhra Pradesh,Kurnool,Kurnool,Maize,Yellow,2026-08-15,2210,2420,2290
+Andhra Pradesh,Kurnool,Kurnool,Maize,Yellow,2026-09-01,2230,2450,2310
+Andhra Pradesh,Kurnool,Kurnool,Maize,Yellow,2026-09-06,2240,2460,2320
+Andhra Pradesh,Chittoor,Madanapalle,Tomato,Hybrid,2026-06-01,1800,2200,2000
+Andhra Pradesh,Chittoor,Madanapalle,Tomato,Hybrid,2026-06-15,2200,2800,2500
+Andhra Pradesh,Chittoor,Madanapalle,Tomato,Hybrid,2026-07-01,3100,3800,3400
+Andhra Pradesh,Chittoor,Madanapalle,Tomato,Hybrid,2026-07-15,2800,3400,3100
+Andhra Pradesh,Chittoor,Madanapalle,Tomato,Hybrid,2026-08-01,2400,2900,2650
+Andhra Pradesh,Chittoor,Madanapalle,Tomato,Hybrid,2026-08-15,2100,2600,2350
+Andhra Pradesh,Chittoor,Madanapalle,Tomato,Hybrid,2026-09-01,1900,2400,2150
+Andhra Pradesh,Chittoor,Madanapalle,Tomato,Hybrid,2026-09-06,2000,2500,2250
+Andhra Pradesh,Chittoor,Chittoor,Ragi,Regular,2026-06-01,3050,3300,3180
+Andhra Pradesh,Chittoor,Chittoor,Ragi,Regular,2026-07-01,3100,3350,3220
+Andhra Pradesh,Chittoor,Chittoor,Ragi,Regular,2026-08-01,3150,3400,3260
+Andhra Pradesh,Chittoor,Chittoor,Ragi,Regular,2026-09-06,3180,3450,3290
+Andhra Pradesh,Krishna,Vijayawada,Wheat,Sharbati,2026-06-01,2500,2700,2580
+Andhra Pradesh,Krishna,Vijayawada,Wheat,Sharbati,2026-07-01,2520,2730,2610
+Andhra Pradesh,Krishna,Vijayawada,Wheat,Sharbati,2026-08-01,2550,2770,2640
+Andhra Pradesh,Krishna,Vijayawada,Wheat,Sharbati,2026-09-06,2580,2800,2670
