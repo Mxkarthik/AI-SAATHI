@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Pencil, Mic, MicOff } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const BudgetAssistant = () => {
+
+const { t } = useLanguage();
 
 const [expenses,setExpenses] = useState(0);
 const [earnings,setEarnings] = useState(0);
@@ -181,8 +184,8 @@ earningHistory
 
 
 const chartData = [
-{ name:"Expenses", value:expenses },
-{ name:"Earnings", value:earnings }
+{ name: t("budgetAssistant", "expensesLegend"), value:expenses },
+{ name: t("budgetAssistant", "earningsLegend"), value:earnings }
 ];
 
 
@@ -209,7 +212,7 @@ return(
 
 <div className="flex flex-col items-center">
 
-<p className="text-sm mb-2">Record Transaction</p>
+<p className="text-sm mb-2">{t("budgetAssistant", "recordTransaction")}</p>
 
 <button
 onClick={recording ? stopRecording : recordTransaction}
@@ -220,7 +223,7 @@ className="w-14 h-14 bg-yellow-400 text-black rounded-full flex items-center jus
 
 </button>
 
-{recording && <p className="text-xs mt-1">Listening...</p>}
+{recording && <p className="text-xs mt-1">{t("budgetAssistant", "listening")}</p>}
 
 </div>
 
@@ -229,10 +232,10 @@ className="w-14 h-14 bg-yellow-400 text-black rounded-full flex items-center jus
 
 <div className="text-center">
 
-<p className="font-semibold">Expenses</p>
+<p className="font-semibold">{t("budgetAssistant", "expenses")}</p>
 
 <p className="text-sm mt-2">
-Total Expenditure:
+{t("budgetAssistant", "totalExpenditure")}
 </p>
 
 <p className="font-bold">
@@ -246,10 +249,10 @@ Total Expenditure:
 
 <div className="text-center">
 
-<p className="font-semibold">Earnings</p>
+<p className="font-semibold">{t("budgetAssistant", "earnings")}</p>
 
 <p className="text-sm mt-2">
-Total Earnings:
+{t("budgetAssistant", "totalEarnings")}
 </p>
 
 <p className="font-bold">
@@ -263,10 +266,10 @@ Total Earnings:
 
 <div className="text-center">
 
-<p className="font-semibold">Net</p>
+<p className="font-semibold">{t("budgetAssistant", "net")}</p>
 
 <p className="text-sm mt-2">
-Profit/Loss:
+{t("budgetAssistant", "profitLoss")}
 </p>
 
 <p className="font-bold">
@@ -287,7 +290,7 @@ Profit/Loss:
 {transactions.length === 0 ? (
 
 <p className="text-gray-400 text-center">
-Transaction records will appear here
+{t("budgetAssistant", "noTransactions")}
 </p>
 
 ) : (
@@ -311,7 +314,7 @@ Transaction records will appear here
 
 <div className="border border-yellow-500 rounded-xl p-6 flex flex-col items-center">
 
-<p className="mb-4 text-center">Finance Overview</p>
+<p className="mb-4 text-center">{t("budgetAssistant", "financeOverview")}</p>
 
 <PieChart width={260} height={260}>
 
@@ -338,12 +341,12 @@ paddingAngle={4}
 
 <div className="flex items-center gap-2">
 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-<span>Expenses</span>
+<span>{t("budgetAssistant", "expensesLegend")}</span>
 </div>
 
 <div className="flex items-center gap-2">
 <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-<span>Earnings</span>
+<span>{t("budgetAssistant", "earningsLegend")}</span>
 </div>
 
 </div>
@@ -362,7 +365,7 @@ paddingAngle={4}
 <div className="border border-yellow-500 bg-[#07150f] rounded-xl p-6 text-center">
 
 <p className="mb-4">
-Expense Chat History
+{t("budgetAssistant", "expenseHistory")}
 </p>
 
 <button
@@ -382,7 +385,7 @@ className="w-14 h-14 bg-yellow-400 text-black rounded-full flex items-center jus
 <div className="border border-yellow-500 bg-[#07150f] rounded-xl p-6 text-center">
 
 <p className="mb-4">
-Earnings Chat History
+{t("budgetAssistant", "earningHistory")}
 </p>
 
 <button

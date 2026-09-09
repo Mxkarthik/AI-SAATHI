@@ -11,19 +11,21 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const [active, setActive] = useState("Financial News");
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef(null);
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
 
   const menuItems = [
-    { name: "Financial News",      icon: Newspaper,    path: "/" },
-    { name: "Budget Assistant",    icon: Wallet,       path: "/budget-assistant" },
-    { name: "Loan Assistant",      icon: Banknote,     path: "/loan-assistant" },
-    { name: "Investment Assistant",icon: TrendingUp,   path: "/investment-assistant" },
-    { name: "Community",           icon: Users,        path: "/community" },
+    { name: "Financial News",       label: t("sidebar.nav", "financialNews"),       icon: Newspaper,    path: "/" },
+    { name: "Budget Assistant",     label: t("sidebar.nav", "budgetAssistant"),     icon: Wallet,       path: "/budget-assistant" },
+    { name: "Loan Assistant",       label: t("sidebar.nav", "loanAssistant"),       icon: Banknote,     path: "/loan-assistant" },
+    { name: "Investment Assistant", label: t("sidebar.nav", "investmentAssistant"), icon: TrendingUp,   path: "/investment-assistant" },
+    { name: "Community",            label: t("sidebar.nav", "community"),           icon: Users,        path: "/community" },
   ];
 
   // Close account popover when clicking outside
@@ -70,12 +72,12 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         {/* Logo */}
         <div className="flex items-center justify-between p-6 text-2xl font-extrabold border-b border-gray-800">
           <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-            AI SAATHI
+            {t("sidebar", "appName")}
           </span>
           <button
             className="md:hidden p-2 rounded-lg hover:bg-gray-800"
             onClick={onClose}
-            aria-label="Close menu"
+            aria-label={t("sidebar.account", "ariaCloseMenu")}
           >
             <X className="w-5 h-5" />
           </button>
@@ -96,7 +98,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
                   }`}
                 >
                   <Icon size={22} />
-                  <span className="font-medium text-sm">{item.name}</span>
+                  <span className="font-medium text-sm">{item.label}</span>
                 </button>
               </Link>
             );
@@ -135,7 +137,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition"
                 >
                   <LogOut className="w-4 h-4 flex-shrink-0" />
-                  Log out
+                  {t("sidebar.account", "logout")}
                 </button>
               </div>
             )}
@@ -146,7 +148,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-800 transition group"
               aria-haspopup="true"
               aria-expanded={accountOpen}
-              aria-label="Account menu"
+              aria-label={t("sidebar.account", "ariaAccountMenu")}
             >
               {/* Avatar */}
               {user.picture ? (

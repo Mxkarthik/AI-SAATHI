@@ -4,8 +4,10 @@ import TopFinancialUpdates from "./TopFinancialUpdates";
 import WordOfTheDay from "../components/WordOfTheDay";
 import AgriculturePriceCharts from "../components/AgriculturePriceCharts";
 import ExpertFinancialInsights from "../components/ExpertFinancialInsights";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const FinancialNews = () => {
+  const { t } = useLanguage();
   return (
     <div className="w-full px-2 sm:px-4 md:px-8 py-6">
 
@@ -13,12 +15,11 @@ const FinancialNews = () => {
       <div className="flex justify-center items-center gap-3 text-center mb-8">
         <Megaphone className="text-yellow-400 w-6 h-6 md:w-8 md:h-8 flex-shrink-0" />
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-wide leading-tight">
-          <span className="text-yellow-400">Rural India</span>{" "}
-          <span className="text-white">Finance News</span>
+          <span className="text-yellow-400">{t("financialNews", "pageHeadingHighlight")}</span>{" "}
+          <span className="text-white">{t("financialNews", "pageHeading")}</span>
         </h1>
       </div>
 
-      {/* Section Headings Row */}
       {/* Vertical Stack Layout */}
       <div className="flex flex-col gap-10">
 
@@ -27,7 +28,7 @@ const FinancialNews = () => {
           <div className="flex items-center gap-2 mb-4">
             <Newspaper className="text-yellow-400 w-5 h-5 md:w-6 md:h-6" />
             <h2 className="text-yellow-400 text-lg md:text-xl font-bold tracking-wide">
-              Latest News
+              {t("financialNews", "latestNews")}
             </h2>
           </div>
           <TopFinancialUpdates />

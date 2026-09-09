@@ -1,9 +1,11 @@
 import React, { useState, useRef } from "react";
 import { Building2, Landmark, Mic } from "lucide-react";
 import andhraBank from "../assets/andhrabank.png";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const LoanAssistant = () => {
 
+const { t } = useLanguage();
 const [query,setQuery] = useState("")
 const [submitted,setSubmitted] = useState(false)
 const recognitionRef = useRef(null)
@@ -71,7 +73,7 @@ return (
 <div className="border border-yellow-500 rounded-xl p-6 bg-[#07150f]">
 
 <h2 className="text-xl font-semibold mb-6">
-Select Your Bank
+{t("loanAssistant", "selectBank")}
 </h2>
 
 <div className="grid grid-cols-3 gap-4 mb-6">
@@ -106,7 +108,7 @@ className="w-12 h-12 object-contain"
 
 <input
 type="text"
-placeholder="Ask about loan..."
+placeholder={t("loanAssistant", "askPlaceholder")}
 className="bg-black border border-yellow-500 text-white rounded px-3 py-2 w-full mb-4"
 value={query}
 onChange={(e)=>setQuery(e.target.value)}
@@ -119,7 +121,7 @@ onClick={handleSubmit}
 className="bg-yellow-400 text-black px-5 py-2 rounded font-semibold hover:bg-yellow-300"
 >
 
-Submit Query
+{t("loanAssistant", "submitQuery")}
 
 </button>
 
@@ -128,7 +130,7 @@ onClick={startRecording}
 className="bg-red-500 text-white px-5 py-2 rounded font-semibold flex items-center gap-2"
 >
 
-<Mic size={18}/> Start Recording
+<Mic size={18}/> {t("loanAssistant", "startRecording")}
 
 </button>
 
@@ -144,12 +146,12 @@ className="bg-red-500 text-white px-5 py-2 rounded font-semibold flex items-cent
 <div className="border border-yellow-500 rounded-xl p-4 bg-[#07150f]">
 
 <h3 className="mb-3 font-semibold">
-Chat History
+{t("loanAssistant", "chatHistory")}
 </h3>
 
 <div className="bg-black border border-yellow-500 rounded-lg p-3 text-sm">
 
-{submitted ? query : "No conversation yet"}
+{submitted ? query : t("loanAssistant", "noConversation")}
 
 </div>
 

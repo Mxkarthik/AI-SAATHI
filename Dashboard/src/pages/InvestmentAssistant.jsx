@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { Shield, Scale, Rocket } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const InvestmentAssistant = () => {
+
+const { t } = useLanguage();
 
 const [risk,setRisk] = useState("Low");
 const [income,setIncome] = useState("");
@@ -72,7 +75,7 @@ return (
 <div className="min-h-screen bg-black text-yellow-400 p-6">
 
 <h1 className="text-2xl font-semibold mb-6">
-Micro Investment & Government Scheme Recommendations
+{t("investmentAssistant", "pageHeading")}
 </h1>
 
 <div className="grid lg:grid-cols-2 gap-6">
@@ -82,11 +85,11 @@ Micro Investment & Government Scheme Recommendations
 <div className="border border-yellow-500 bg-[#07150f] p-6 rounded-xl shadow-lg">
 
 <h2 className="mb-4 font-semibold">
-Micro Investment Suggestions
+{t("investmentAssistant", "microInvestment")}
 </h2>
 
 <p className="mb-3 text-sm text-yellow-300">
-Risk Level
+{t("investmentAssistant", "riskLevel")}
 </p>
 
 <div className="grid grid-cols-3 gap-4 mb-6">
@@ -98,8 +101,8 @@ ${risk==="Low" ? "bg-yellow-400 text-black border-yellow-400" : "border-yellow-5
 `}
 >
 <Shield size={30}/>
-<p className="mt-2 font-semibold">Low Risk</p>
-<p className="text-xs">Safe & Steady</p>
+<p className="mt-2 font-semibold">{t("investmentAssistant", "lowRisk")}</p>
+<p className="text-xs">{t("investmentAssistant", "lowRiskDesc")}</p>
 </div>
 
 <div
@@ -109,8 +112,8 @@ ${risk==="Medium" ? "bg-yellow-400 text-black border-yellow-400" : "border-yello
 `}
 >
 <Scale size={30}/>
-<p className="mt-2 font-semibold">Medium Risk</p>
-<p className="text-xs">Balanced Growth</p>
+<p className="mt-2 font-semibold">{t("investmentAssistant", "mediumRisk")}</p>
+<p className="text-xs">{t("investmentAssistant", "mediumRiskDesc")}</p>
 </div>
 
 <div
@@ -120,8 +123,8 @@ ${risk==="High" ? "bg-yellow-400 text-black border-yellow-400" : "border-yellow-
 `}
 >
 <Rocket size={30}/>
-<p className="mt-2 font-semibold">High Risk</p>
-<p className="text-xs">Maximum Returns</p>
+<p className="mt-2 font-semibold">{t("investmentAssistant", "highRisk")}</p>
+<p className="text-xs">{t("investmentAssistant", "highRiskDesc")}</p>
 </div>
 
 </div>
@@ -129,21 +132,21 @@ ${risk==="High" ? "bg-yellow-400 text-black border-yellow-400" : "border-yellow-
 <div className="grid md:grid-cols-2 gap-4 mb-4">
 
 <div>
-<p className="text-sm mb-1">Investment Income (INR)</p>
+<p className="text-sm mb-1">{t("investmentAssistant", "investmentIncome")}</p>
 <input
 value={income}
 onChange={(e)=>setIncome(e.target.value)}
-placeholder="Enter your monthly income"
+placeholder={t("investmentAssistant", "incomePlaceholder")}
 className="w-full bg-black border border-yellow-500 rounded p-2 text-white"
 />
 </div>
 
 <div>
-<p className="text-sm mb-1">Investment Period (years)</p>
+<p className="text-sm mb-1">{t("investmentAssistant", "investmentPeriod")}</p>
 <input
 value={period}
 onChange={(e)=>setPeriod(e.target.value)}
-placeholder="Enter investment duration"
+placeholder={t("investmentAssistant", "periodPlaceholder")}
 className="w-full bg-black border border-yellow-500 rounded p-2 text-white"
 />
 </div>
@@ -156,14 +159,14 @@ className="w-full bg-black border border-yellow-500 rounded p-2 text-white"
 onClick={startRecording}
 className="bg-yellow-400 text-black py-2 rounded font-semibold hover:bg-yellow-300"
 >
-🎤 Start Recording
+{t("investmentAssistant", "startRecording")}
 </button>
 
 <button
 onClick={savePreferences}
 className="bg-yellow-400 text-black py-2 rounded font-semibold hover:bg-yellow-300"
 >
-Save Preferences
+{t("investmentAssistant", "savePreferences")}
 </button>
 
 </div>
@@ -172,7 +175,7 @@ Save Preferences
 onClick={getRecommendations}
 className="mt-4 w-full bg-yellow-400 text-black py-2 rounded font-semibold hover:bg-yellow-300"
 >
-Get Investment Recommendations
+{t("investmentAssistant", "getRecommendations")}
 </button>
 
 </div>
@@ -182,7 +185,7 @@ Get Investment Recommendations
 <div className="border border-yellow-500 bg-[#07150f] p-6 rounded-xl shadow-lg">
 
 <h2 className="mb-4 font-semibold">
-Government Scheme Recommendations
+{t("investmentAssistant", "govSchemes")}
 </h2>
 
 <div className="grid grid-cols-2 gap-4 mb-4">
@@ -191,14 +194,14 @@ Government Scheme Recommendations
 onClick={startRecording}
 className="bg-yellow-400 text-black py-2 rounded font-semibold hover:bg-yellow-300"
 >
-🎤 Start Recording
+{t("investmentAssistant", "startRecording")}
 </button>
 
 <button
 onClick={stopRecording}
 className="bg-red-500 text-white py-2 rounded font-semibold hover:bg-red-400"
 >
-⏹ Stop Recording
+{t("investmentAssistant", "stopRecording")}
 </button>
 
 </div>
@@ -207,7 +210,7 @@ className="bg-red-500 text-white py-2 rounded font-semibold hover:bg-red-400"
 onClick={getSchemeRecommendations}
 className="w-full bg-yellow-400 text-black py-2 rounded font-semibold hover:bg-yellow-300"
 >
-Get Scheme Recommendation
+{t("investmentAssistant", "getSchemes")}
 </button>
 
 {/* Fake AI Responses */}
@@ -218,11 +221,11 @@ Get Scheme Recommendation
 <div key={index} className="border border-yellow-500 p-4 rounded-lg bg-black">
 
 <p className="font-semibold text-yellow-300">
-🎤 User: {item.question}
+{t("investmentAssistant", "userLabel")} {item.question}
 </p>
 
 <p className="mt-2 text-white">
-🤖 AI SAATHI: {item.answer}
+{t("investmentAssistant", "aiLabel")} {item.answer}
 </p>
 
 </div>
