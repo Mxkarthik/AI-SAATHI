@@ -10,6 +10,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import AuthModal from "../components/AuthModal";
+import { useLanguage } from "../i18n/LanguageContext";
 
 /**
  * LandingPage — shown to unauthenticated users.
@@ -18,44 +19,45 @@ import AuthModal from "../components/AuthModal";
  */
 export default function LandingPage() {
   const [showModal, setShowModal] = useState(false);
+  const { t } = useLanguage();
 
   const features = [
     {
       icon: Newspaper,
-      title: "Rural Finance News",
-      desc: "Latest financial updates, crop prices, and government schemes curated for rural India.",
+      title: t("landing.features.news", "title"),
+      desc:  t("landing.features.news", "desc"),
     },
     {
       icon: Wallet,
-      title: "Budget Assistant",
-      desc: "Plan your household and farm budget with personalised guidance.",
+      title: t("landing.features.budget", "title"),
+      desc:  t("landing.features.budget", "desc"),
     },
     {
       icon: Banknote,
-      title: "Loan Assistant",
-      desc: "Understand loan options, eligibility, and repayment strategies in your language.",
+      title: t("landing.features.loan", "title"),
+      desc:  t("landing.features.loan", "desc"),
     },
     {
       icon: TrendingUp,
-      title: "Investment Assistant",
-      desc: "Safe, simple investment advice suited for rural households.",
+      title: t("landing.features.investment", "title"),
+      desc:  t("landing.features.investment", "desc"),
     },
     {
       icon: Users,
-      title: "Community",
-      desc: "Connect with other farmers and rural entrepreneurs to share insights.",
+      title: t("landing.features.community", "title"),
+      desc:  t("landing.features.community", "desc"),
     },
     {
       icon: BarChart3,
-      title: "Agriculture Price Charts",
-      desc: "Track mandi prices and predict crop market trends.",
+      title: t("landing.features.charts", "title"),
+      desc:  t("landing.features.charts", "desc"),
     },
   ];
 
   const highlights = [
-    { icon: Sprout,       text: "Built for rural India — available in Telugu & English" },
-    { icon: ShieldCheck,  text: "Your financial data stays private and secure" },
-    { icon: BarChart3,    text: "AI-powered insights without financial jargon" },
+    { icon: Sprout,       text: t("landing.highlights", "rural") },
+    { icon: ShieldCheck,  text: t("landing.highlights", "privacy") },
+    { icon: BarChart3,    text: t("landing.highlights", "insights") },
   ];
 
   return (
@@ -63,45 +65,43 @@ export default function LandingPage() {
       {/* ── Nav ─────────────────────────────────────────────── */}
       <nav className="flex items-center justify-between px-6 sm:px-10 py-5 border-b border-gray-800/60">
         <span className="text-xl font-extrabold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-          AI SAATHI
+          {t("landing.nav", "appName")}
         </span>
         <button
           onClick={() => setShowModal(true)}
           className="px-5 py-2 rounded-lg bg-yellow-400 text-gray-950 font-semibold text-sm hover:bg-yellow-300 active:scale-95 transition-all"
         >
-          Sign In
+          {t("landing.nav", "signIn")}
         </button>
       </nav>
 
       {/* ── Hero ────────────────────────────────────────────── */}
       <section className="flex flex-col items-center text-center px-6 pt-20 pb-16 max-w-3xl mx-auto">
         <span className="inline-block mb-4 px-3 py-1 rounded-full bg-yellow-400/10 border border-yellow-400/20 text-yellow-400 text-xs font-semibold tracking-wide uppercase">
-          Financial Intelligence for Rural India
+          {t("landing", "badge")}
         </span>
 
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6">
           <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-            AI Saathi
+            {t("landing", "heroTitle1")}
           </span>
           <br />
-          <span className="text-white">Your Money. Your Future.</span>
+          <span className="text-white">{t("landing", "heroTitle2")}</span>
         </h1>
 
         <p className="text-gray-400 text-base sm:text-lg leading-relaxed mb-10 max-w-xl">
-          AI-powered financial guidance designed specifically for farmers,
-          rural households, and small business owners in India — in Telugu
-          and English.
+          {t("landing", "heroSubtitle")}
         </p>
 
         <button
           onClick={() => setShowModal(true)}
           className="px-8 py-4 rounded-xl bg-yellow-400 text-gray-950 font-bold text-base hover:bg-yellow-300 active:scale-95 transition-all shadow-lg shadow-yellow-400/20"
         >
-          Get Started — It&apos;s Free
+          {t("landing", "heroCTA")}
         </button>
 
         <p className="mt-4 text-xs text-gray-600">
-          No credit card required · Sign in with Google
+          {t("landing", "heroNote")}
         </p>
       </section>
 
@@ -121,7 +121,7 @@ export default function LandingPage() {
       {/* ── Features grid ───────────────────────────────────── */}
       <section className="px-6 sm:px-10 pb-20 max-w-5xl mx-auto">
         <h2 className="text-center text-2xl font-bold text-white mb-10">
-          Everything you need in one place
+          {t("landing", "featuresHeading")}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map(({ icon: Icon, title, desc }) => (
@@ -142,16 +142,16 @@ export default function LandingPage() {
       {/* ── Bottom CTA ──────────────────────────────────────── */}
       <section className="border-t border-gray-800 px-6 py-16 text-center">
         <h2 className="text-2xl font-bold text-white mb-3">
-          Ready to take control of your finances?
+          {t("landing.ctaSection", "heading")}
         </h2>
         <p className="text-gray-400 text-sm mb-8">
-          Join thousands of farmers and rural households already using AI Saathi.
+          {t("landing.ctaSection", "subheading")}
         </p>
         <button
           onClick={() => setShowModal(true)}
           className="px-8 py-4 rounded-xl bg-yellow-400 text-gray-950 font-bold hover:bg-yellow-300 active:scale-95 transition-all"
         >
-          Get Started — It&apos;s Free
+          {t("landing.ctaSection", "button")}
         </button>
       </section>
 
