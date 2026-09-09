@@ -1,29 +1,191 @@
-const understandMessage = async (message) => {
-  if (!message || typeof message !== "string") {
-    throw new Error("Message must be a non-empty string");
-  }
+"use strict";
 
-  const language = detectLanguage(message);
+/**
+ * understandingService.js
+ *
+ * The understanding service is the single entry point for message comprehension.
+ * It delegates to the configured AI provider (Gemini / Ollama) via providerManager,
+ * normalises values to match the FinancialProfile schema, and falls back gracefully
+ * if the provider fails.
+ *
+ * ─── What this service does ────────────────────────────────────────────────
+ *   1. Validates the input message.
+ *   2. Calls the AI provider via providerManager.
+ *   3. Validates the provider response has the required shape.
+ *   4. Normalises entity values so they match FinancialProfile schema enums
+ *      (e.g. Gemini returns "acre" but the schema stores "acres").
+ *   5. Falls back to a minimal response with Telugu-regex language detection
+ *      if the provider fails entirely — callers can still proceed with
+ *      graceful degradation.
+ *
+ * ─── What this service does NOT do ────────────────────────────────────────
+ *   - No Gemini-specific code (delegated to geminiProvider)
+ *   - No intent detection logic (delegated to AI provider)
+ *   - No entity extraction logic (delegated to AI provider)
+ *   - No database access
+ *   - No financial recommendations
+ *
+ * ─── Return shape ──────────────────────────────────────────────────────────
+ * {
+ *   language   : "en" | "te",
+ *   intent     : string,
+ *   entities   : object,     // normalised, null values stripped
+ *   confidence : { intent: number, entities: number },
+ *   provider   : "gemini" | "ollama" | "fallback",
+ * }
+ */
 
-  return {
-    language,
-    intent: "general_financial_guidance",
-    entities: {}
-  };
+const { getProvider }  = require("./providers/providerManager");
+
+// ─── Telugu language detection (fallback only) ───────────────────────────────
+
+/**
+ * Detect language using Telugu Unicode range.
+ * Used ONLY when the AI provider fails to return a language.
+ *
+ * @param {string} message
+ * @returns {"te"|"en"}
+ */
+function detectLanguageFallback(message) {
+  const teluguChars = message.match(/[\u0C00-\u0C7F]/g);
+  return (teluguChars && teluguChars.length > 0) ? "te" : "en";
+}
+
+// ─── Value normalisation ──────────────────────────────────────────────────────
+
+/**
+ * Maps AI provider values to FinancialProfile schema enum values.
+ * The AI prompt instructs "acre" / "hectare" / "bigha" (singular) but
+ * the FinancialProfile schema requires "acres" / "hectares" / "bigha".
+ */
+const LAND_UNIT_MAP = {
+  "acre":     "acres",
+  "acres":    "acres",      // already correct — idempotent
+  "hectare":  "hectares",
+  "hectares": "hectares",   // already correct
+  "bigha":    "bigha",      // same in both
 };
 
-const detectLanguage = (message) => {
-  // Telugu Unicode range: 0C00–0C7F
-  const teluguCharacters = message.match(/[\u0C00-\u0C7F]/g);
-
-  if (teluguCharacters && teluguCharacters.length > 0) {
-    return "te";
-  }
-
-  return "en";
+const OWNERSHIP_MAP = {
+  "own":    "owned",
+  "owned":  "owned",
+  "lease":  "leased",
+  "leased": "leased",
+  "shared": "shared",
+  "share":  "shared",
 };
 
+/**
+ * Normalise entity values extracted by the AI provider to match
+ * FinancialProfile schema constraints.
+ *
+ * @param {object} entities — raw entities from the provider
+ * @returns {object}        — normalised entities (nulls stripped)
+ */
+function normaliseEntities(entities) {
+  if (!entities || typeof entities !== "object") return {};
+
+  const out = {};
+
+  for (const [key, value] of Object.entries(entities)) {
+    // Skip null/undefined — they carry no information
+    if (value === null || value === undefined) continue;
+
+    switch (key) {
+      case "landUnit": {
+        const normalised = LAND_UNIT_MAP[String(value).toLowerCase().trim()];
+        if (normalised) out.landUnit = normalised;
+        // If not in map, drop it — don't persist an invalid enum value
+        break;
+      }
+      case "ownership": {
+        const normalised = OWNERSHIP_MAP[String(value).toLowerCase().trim()];
+        if (normalised) out.ownership = normalised;
+        break;
+      }
+      default:
+        // For strings: trim whitespace; for everything else: pass through
+        out[key] = typeof value === "string" ? value.trim() : value;
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Validate that the provider response has the minimum required shape.
+ *
+ * @param {*} result
+ * @returns {boolean}
+ */
+function isValidProviderResponse(result) {
+  if (!result || typeof result !== "object") return false;
+  if (typeof result.language !== "string" || !result.language) return false;
+  if (typeof result.intent   !== "string" || !result.intent)   return false;
+  if (typeof result.entities !== "object" || !result.entities) return false;
+  return true;
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+/**
+ * Understand a user message using the configured AI provider.
+ *
+ * @param {string} message — raw user message (Telugu, English, or mixed)
+ * @returns {Promise<object>} — normalised understanding result
+ * @throws {Error} only for invalid input (missing / non-string message)
+ */
+async function understandMessage(message) {
+  if (!message || typeof message !== "string" || message.trim() === "") {
+    throw new Error("understandMessage: message must be a non-empty string.");
+  }
+
+  const cleanMessage = message.trim();
+  const providerName = (process.env.AI_PROVIDER || "gemini").toLowerCase().trim();
+
+  // ── Attempt AI provider understanding ──────────────────────────────────
+  try {
+    const provider = getProvider();
+    const raw = await provider.understand(cleanMessage);
+
+    if (!isValidProviderResponse(raw)) {
+      throw new Error(
+        `Provider "${providerName}" returned an invalid response shape.`
+      );
+    }
+
+    const normalisedEntities = normaliseEntities(raw.entities);
+
+    return {
+      language:   raw.language,
+      intent:     raw.intent,
+      entities:   normalisedEntities,
+      confidence: raw.confidence || { intent: 0, entities: 0 },
+      provider:   providerName,
+    };
+  } catch (providerError) {
+    // ── Graceful fallback ─────────────────────────────────────────────────
+    // The provider failed. Return a minimal response so the orchestration
+    // pipeline can continue with whatever context it already has.
+    // Log the failure clearly so it is visible in server logs.
+    console.error(
+      `[understandingService] Provider "${providerName}" failed: ${providerError.message}`
+    );
+
+    const fallbackLanguage = detectLanguageFallback(cleanMessage);
+
+    return {
+      language:   fallbackLanguage,
+      intent:     "general_financial_guidance",
+      entities:   {},
+      confidence: { intent: 0, entities: 0 },
+      provider:   "fallback",
+    };
+  }
+}
+
+// Export detectLanguage so existing callers that import it directly still work
 module.exports = {
   understandMessage,
-  detectLanguage
+  detectLanguage: detectLanguageFallback,  // preserved for backward compat
 };

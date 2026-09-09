@@ -310,32 +310,138 @@ await test("TEST 4 setup", async () => {
 // ─── TEST 5: Invalid input validation ────────────────────────────────────────
 
 console.log("\n═══════════════════════════════════════════════════════════");
-console.log(" TEST 5: Invalid input");
+console.log(" TEST 5: Language propagation to nextQuestionService");
+console.log("═══════════════════════════════════════════════════════════\n");
+
+await test("TEST 5 setup", async () => {
+  let capturedLanguage = null;
+
+  const languageCapturingStub = {
+    getNextQuestion: async ({ missingFields, language }) => {
+      capturedLanguage = language;  // capture exactly what the orchestrator passes
+      return {
+        field:    missingFields[0],
+        question: `stub question`,
+        language: language,
+        source:   "fallback",
+      };
+    },
+  };
+
+  // Telugu message → language = "te" from understanding
+  await withStub(
+    "./understanding/understandingService",
+    understandingStub("crop_financing", {}, "te"),
+    () => withStub(
+      "./questions/nextQuestionService",
+      languageCapturingStub,
+      async () => {
+        const { orchestrate } = require("./orchestratorService");
+        return orchestrate({ conversation: CONV_TE, profile: null, message: "test" });
+      }
+    )
+  );
+
+  assert("T5: language 'te' propagated to nextQuestionService",
+    capturedLanguage === "te", capturedLanguage);
+
+  // English message → language = "en"
+  capturedLanguage = null;
+  await withStub(
+    "./understanding/understandingService",
+    understandingStub("equipment_financing", { equipment: "tractor" }, "en"),
+    () => withStub(
+      "./questions/nextQuestionService",
+      languageCapturingStub,
+      async () => {
+        const { orchestrate } = require("./orchestratorService");
+        return orchestrate({ conversation: CONV_EN, profile: null, message: "test" });
+      }
+    )
+  );
+
+  assert("T5: language 'en' propagated to nextQuestionService",
+    capturedLanguage === "en", capturedLanguage);
+});
+
+// ─── TEST 6: Invalid input validation ────────────────────────────────────────
+
+console.log("\n═══════════════════════════════════════════════════════════");
+console.log(" TEST 6: Invalid input");
 console.log("═══════════════════════════════════════════════════════════\n");
 
 // Load a clean orchestratorService (no stubs needed — validation happens before any service call)
 delete require.cache[require.resolve("./orchestratorService")];
 const { orchestrate } = require("./orchestratorService");
 
-await testThrows("T5a: null argument throws",
+await testThrows("T6a: null argument throws",
   () => orchestrate(null),
   "must be a non-null object");
 
-await testThrows("T5b: missing message throws",
+await testThrows("T6b: missing message throws",
   () => orchestrate({ conversation: CONV_EN, profile: null }),
   "message");
 
-await testThrows("T5c: empty message throws",
+await testThrows("T6c: empty message throws",
   () => orchestrate({ conversation: CONV_EN, profile: null, message: "   " }),
   "message");
 
-await testThrows("T5d: missing conversation throws",
+await testThrows("T6d: missing conversation throws",
   () => orchestrate({ profile: null, message: "hello" }),
   "conversation");
 
-await testThrows("T5e: null conversation throws",
+await testThrows("T6e: null conversation throws",
   () => orchestrate({ conversation: null, profile: null, message: "hello" }),
   "conversation");
+
+// ─── TEST 7: No question-generation call when informationGap is complete ──────
+
+console.log("\n═══════════════════════════════════════════════════════════");
+console.log(" TEST 7: No question-generation when all fields are collected");
+console.log("═══════════════════════════════════════════════════════════\n");
+
+await test("TEST 7 setup", async () => {
+  let getNextQuestionCallCount = 0;
+
+  const countingNextQuestion = {
+    getNextQuestion: async (params) => {
+      getNextQuestionCallCount++;
+      return {
+        field: params.missingFields[0],
+        question: "stub",
+        language: "en",
+        source: "fallback",
+      };
+    },
+  };
+
+  const fullProfile = {
+    location: { state: "Andhra Pradesh", district: "Guntur" },
+    farming:  { landArea: 3, landUnit: "acres", ownership: "owned" },
+    crops:    ["paddy"],
+    financial: { farmIncome: 120000, monthlyExpenses: 8000, existingLoans: [{ lender: "SBI", amount: 30000 }] },
+    assets:   { equipment: [], livestock: [] },
+  };
+
+  const result = await withStub(
+    "./understanding/understandingService",
+    understandingStub("crop_financing", { season: "kharif", amount: 50000 }, "en"),
+    () => withStub(
+      "./questions/nextQuestionService",
+      countingNextQuestion,
+      async () => {
+        const { orchestrate } = require("./orchestratorService");
+        return orchestrate({ conversation: CONV_EN, profile: fullProfile, message: "test" });
+      }
+    )
+  );
+
+  assert("T7: status = ready_for_decision",   result.status === "ready_for_decision");
+  assert("T7: nextQuestion = null",            result.nextQuestion === null);
+  assert("T7: getNextQuestion NOT called",     getNextQuestionCallCount === 0, `called ${getNextQuestionCallCount} times`);
+
+  console.log("  (getNextQuestion call count:", getNextQuestionCallCount + ")");
+});
 
 // ─── Summary ──────────────────────────────────────────────────────────────────
 
