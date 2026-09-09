@@ -14,9 +14,14 @@ import LoanAssistant from "./pages/LoanAssistant";
 // Layout
 import Sidebar from "./components/Layouts/Sidebar";
 
+// i18n
+import { LanguageProvider, useLanguage } from "./i18n/LanguageContext";
+import LanguageConsentModal from "./i18n/LanguageConsentModal";
+
 const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
 
   // ── Loading state: don't flash either the landing page or dashboard ──
   if (loading) {
@@ -26,7 +31,7 @@ const App = () => {
           <span className="text-2xl font-extrabold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
             AI SAATHI
           </span>
-          <span className="text-sm text-gray-500 animate-pulse">Loading…</span>
+          <span className="text-sm text-gray-500 animate-pulse">{t("app", "loading")}</span>
         </div>
       </div>
     );
@@ -36,6 +41,7 @@ const App = () => {
   if (!user) {
     return (
       <BrowserRouter>
+        <ConsentOverlay />
         <LandingPage />
       </BrowserRouter>
     );
@@ -44,6 +50,7 @@ const App = () => {
   // ── Authenticated: show full dashboard ──
   return (
     <BrowserRouter>
+      <ConsentOverlay />
       <div className="min-h-screen bg-gray-950 text-white flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -59,7 +66,7 @@ const App = () => {
             </button>
 
             <span className="text-lg font-extrabold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-              AI SAATHI
+              {t("app", "appName")}
             </span>
 
             <div className="w-10" />
@@ -80,4 +87,17 @@ const App = () => {
   );
 };
 
-export default App;
+/** Renders the consent modal only when the context says to show it. */
+function ConsentOverlay() {
+  const { showConsent } = useLanguage();
+  return showConsent ? <LanguageConsentModal /> : null;
+}
+
+/** Wrap the whole app in the language provider so every component can use t(). */
+export default function AppWithLanguage() {
+  return (
+    <LanguageProvider>
+      <App />
+    </LanguageProvider>
+  );
+}

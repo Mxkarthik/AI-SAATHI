@@ -1,30 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { KeyRound } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const WordOfTheDay = () => {
+  const { tObj, t, language } = useLanguage();
 
-  const [cards, setCards] = useState([
-    {
-      word: "Farmer Producer Organization (FPO)",
-      desc: "FPOs are cooperative groups formed by farmers to collectively produce and market crops."
-    },
-    {
-      word: "Subsidy",
-      desc: "Financial assistance provided by the government to support farmers."
-    },
-    {
-      word: "Crop Rotation",
-      desc: "Growing different crops sequentially to maintain soil fertility."
-    },
-    {
-      word: "Kisan Credit Card",
-      desc: "Affordable credit scheme for farmers."
-    },
-    {
-      word: "Minimum Support Price",
-      desc: "Government guaranteed price for crops."
-    }
-  ]);
+  const [cards, setCards] = useState(() => tObj("wordOfTheDay.cards"));
+
+  // Re-sync cards when the language changes
+  useEffect(() => {
+    setCards(tObj("wordOfTheDay.cards"));
+  }, [language]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [animating, setAnimating] = useState(false);
 
@@ -47,7 +33,7 @@ const WordOfTheDay = () => {
       <div className="flex items-center justify-center gap-2 mb-10">
         <KeyRound className="text-yellow-400 w-5 h-5 md:w-6 md:h-6" />
         <h2 className="text-yellow-400 text-lg md:text-xl font-bold tracking-wide">
-          Words of the Day
+          {t("wordOfTheDay", "heading")}
         </h2>
       </div>
 
@@ -76,7 +62,7 @@ const WordOfTheDay = () => {
                 </p>
                 {isFront && (
                   <p className="text-black/40 text-xs text-center mt-6 font-bold animate-pulse">
-                    TAP TO ROTATE →
+                    {t("wordOfTheDay", "tapToRotate")}
                   </p>
                 )}
               </div>

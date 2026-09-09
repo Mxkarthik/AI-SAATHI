@@ -1,5 +1,6 @@
 import React, { useRef } from "react";
 import { ChevronLeft, ChevronRight, PlayCircle, Youtube } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 const videos = [
     {
@@ -54,6 +55,7 @@ const videos = [
 
 const ExpertFinancialInsights = () => {
     const scrollRef = useRef(null);
+    const { t } = useLanguage();
 
     const scroll = (direction) => {
         if (scrollRef.current) {
@@ -70,7 +72,7 @@ const ExpertFinancialInsights = () => {
                 <div className="flex items-center gap-2">
                     <Youtube className="text-red-600 w-6 h-6" />
                     <h2 className="text-yellow-400 text-lg md:text-xl font-bold tracking-wide">
-                        Expert Financial Insights
+                        {t("expertInsights", "heading")}
                     </h2>
                 </div>
                 <div className="flex gap-3">

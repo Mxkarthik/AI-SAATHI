@@ -11,6 +11,7 @@ import {
     ReferenceLine,
     Label,
 } from 'recharts';
+import { useLanguage } from '../i18n/LanguageContext';
 
 const cropData = {
     Ragi: [
@@ -106,7 +107,7 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-const ChartCard = ({ title, data, peakValue, predictionType }) => {
+const ChartCard = ({ title, data, peakValue, predictionType, actualPricesLabel, dateLabel }) => {
     const peakPoint = data.reduce((prev, curr) => (curr.price > (prev.price || 0) ? curr : prev), {});
 
     return (
@@ -162,7 +163,7 @@ const ChartCard = ({ title, data, peakValue, predictionType }) => {
                         </ReferenceDot>
 
                         <Line
-                            name="Actual Prices"
+                            name={actualPricesLabel}
                             type="monotone"
                             dataKey="price"
                             stroke="#fbbf24"
@@ -237,7 +238,7 @@ const ChartCard = ({ title, data, peakValue, predictionType }) => {
                     <div className="w-3 h-0.5 bg-yellow-400 relative">
                         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
                     </div>
-                    <span className="text-[10px] text-gray-400">Actual Prices</span>
+                    <span className="text-[10px] text-gray-400">{actualPricesLabel}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-0.5 bg-green-500 border-dashed relative">
@@ -248,18 +249,19 @@ const ChartCard = ({ title, data, peakValue, predictionType }) => {
             </div>
 
             <div className="flex justify-center mt-2">
-                <span className="text-[10px] text-gray-400 font-semibold tracking-widest uppercase">Date</span>
+                <span className="text-[10px] text-gray-400 font-semibold tracking-widest uppercase">{dateLabel}</span>
             </div>
         </div>
     );
 };
 
 const AgriculturePriceCharts = () => {
+    const { t } = useLanguage();
     return (
         <div className="w-full">
             <div className="flex items-center gap-2 mb-6">
                 <h2 className="text-yellow-400 text-lg md:text-xl font-bold tracking-wide">
-                    Crop Price Trends & Predictions
+                    {t("agricultureCharts", "heading")}
                 </h2>
             </div>
 
@@ -268,21 +270,29 @@ const AgriculturePriceCharts = () => {
                     title="Ragi"
                     data={cropData.Ragi}
                     predictionType="6-Month Prediction"
+                    actualPricesLabel={t("agricultureCharts", "actualPrices")}
+                    dateLabel={t("agricultureCharts", "date")}
                 />
                 <ChartCard
                     title="Tomato"
                     data={cropData.Tomato}
                     predictionType="6-Month Prediction"
+                    actualPricesLabel={t("agricultureCharts", "actualPrices")}
+                    dateLabel={t("agricultureCharts", "date")}
                 />
                 <ChartCard
                     title="Rice"
                     data={cropData.Rice}
                     predictionType="1-Month Prediction"
+                    actualPricesLabel={t("agricultureCharts", "actualPrices")}
+                    dateLabel={t("agricultureCharts", "date")}
                 />
                 <ChartCard
                     title="Wheat"
                     data={cropData.Wheat}
                     predictionType="1-Month Prediction"
+                    actualPricesLabel={t("agricultureCharts", "actualPrices")}
+                    dateLabel={t("agricultureCharts", "date")}
                 />
             </div>
         </div>
