@@ -168,6 +168,8 @@ const PROFILE_PARTIAL = {
     assertEq(result.understanding.intent, "crop_financing", "understanding.intent patched to crop_financing");
     assertEq(result.intent, "crop_financing", "orchestration.intent = crop_financing");
     assertEq(result.status, "needs_information", "status = needs_information (NOT ready_for_decision)");
+    assertEq(result.conversationState.intent, "crop_financing", "state intent preserved after fallback");
+    assertEq(result.conversationState.stage, "information_collection", "state stage after fallback");
   });
 
   // TEST 3: Provider fallback + season entity in message → season not in missingFields
@@ -200,6 +202,8 @@ const PROFILE_PARTIAL = {
     assert(missing.includes("amount"),      "amount still missing");
     assert(missing.includes("income"),      "income still missing");
     assert(missing.includes("existingDebt"),"existingDebt still missing");
+    assertEq(result.conversationState.missingFields.join(","), "amount,income,existingDebt", "state remaining fields");
+    assertEq(result.conversationState.lastAskedField, "amount", "state last asked field");
 
     console.log(`    remaining missingFields: [${missing.join(", ")}]`);
   });

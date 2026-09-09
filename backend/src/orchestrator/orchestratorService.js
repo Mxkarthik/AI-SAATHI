@@ -70,6 +70,9 @@ const understandingService   = require("./understanding/understandingService");
 const { buildContext }        = require("./context/contextService");
 const { analyzeInformationGap } = require("./informationGap/informationGapService");
 const { getNextQuestion }     = require("./questions/nextQuestionService");
+const { deriveConversationState } = require("./state/conversationStateService");
+const { deriveProfileSync } = require("./profileSync/profileSyncService");
+const profileService = require("../services/profileService");
 
 // ─── Intent continuity ────────────────────────────────────────────────────────
 
@@ -176,10 +179,23 @@ async function orchestrate(params) {
 
   const language = understanding.language || "en";
 
-  // ── Step 2: Build normalised context ─────────────────────────────────────
+  // ── Step 2: Persist schema-approved extracted profile facts ───────────────
+  const profileSync = deriveProfileSync({ userId, understanding, profile: profile || null });
+  let syncedProfile = profile || null;
+  if (profileSync.updated && userId) {
+    try {
+      syncedProfile = await profileService.upsertProfile(userId, profileSync.changes);
+    } catch (err) {
+      const wrapped = new Error(`orchestrate: profile sync failed — ${err.message}`);
+      wrapped.cause = err;
+      throw wrapped;
+    }
+  }
+
+  // ── Step 3: Build normalised context from the updated profile ────────────
   let context;
   try {
-    context = buildContext({ profile: profile || null, conversation, understanding });
+    context = buildContext({ profile: syncedProfile, conversation, understanding });
   } catch (err) {
     const wrapped = new Error(
       `orchestrate: context step failed — ${err.message}`
@@ -188,7 +204,7 @@ async function orchestrate(params) {
     throw wrapped;
   }
 
-  // ── Step 3: Analyse information gap ──────────────────────────────────────
+  // ── Step 4: Analyse information gap ──────────────────────────────────────
   let informationGap;
   try {
     informationGap = analyzeInformationGap(context);
@@ -206,6 +222,15 @@ async function orchestrate(params) {
 
   // All required fields are collected → ready for a decision
   if (informationGap.isComplete) {
+    const nextQuestion = null;
+    const conversationState = deriveConversationState({
+      conversation,
+      intent,
+      language,
+      informationGap,
+      nextQuestion,
+    });
+
     return {
       status:         "ready_for_decision",
       language,
@@ -213,7 +238,9 @@ async function orchestrate(params) {
       understanding,
       context,
       informationGap,
-      nextQuestion:   null,
+      nextQuestion,
+      conversationState,
+      profileSync,
     };
   }
 
@@ -225,6 +252,13 @@ async function orchestrate(params) {
     context,
     language,
   });
+  const conversationState = deriveConversationState({
+    conversation,
+    intent,
+    language,
+    informationGap,
+    nextQuestion,
+  });
 
   return {
     status:         "needs_information",
@@ -234,6 +268,8 @@ async function orchestrate(params) {
     context,
     informationGap,
     nextQuestion,
+    conversationState,
+    profileSync,
   };
 }
 
