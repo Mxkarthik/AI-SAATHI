@@ -9,6 +9,7 @@ const profileRoutes = require("./routes/profileRoutes");
 const conversationRoutes = require("./routes/conversationRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const authRoutes = require("./auth/authRoutes");
+const newsRoutes = require("./routes/newsRoutes");
 
 const app = express();
 
@@ -45,5 +46,6 @@ app.use("/api/users", userRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/conversations/:conversationId/messages", messageRoutes);
+app.use("/api/news", newsRoutes);
 
 module.exports = app;

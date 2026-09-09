@@ -2,11 +2,10 @@
  * LanguageContext — centralised language state for AI Saathi.
  *
  * Responsibilities:
- *  1. On first visit: detect user's approximate region via IP geolocation.
+ *  1. On each page load: detect user's approximate region via IP geolocation.
  *  2. If the region is Telangana or Andhra Pradesh, expose a flag so the
  *     app can prompt the user to switch to Telugu.
- *  3. Store / restore the user's confirmed language preference in
- *     localStorage so the consent dialog never reappears.
+ *  3. Keep the user's confirmed language preference for the current session.
  *  4. Provide a `t(section, key)` helper that returns the correct string
  *     for the active language.
  *
@@ -26,9 +25,6 @@ import translations from "./translations";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "aisaathi_language";          // persisted language preference
-const CONSENT_KEY = "aisaathi_consent_shown";     // whether the dialog has been answered
-
 // State / region names that map to Telugu suggestion
 const TELUGU_REGIONS = new Set([
   "telangana",
@@ -44,23 +40,13 @@ const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
   // "en" | "te"
-  const [language, setLanguage] = useState(() => {
-    return localStorage.getItem(STORAGE_KEY) || "en";
-  });
+  const [language, setLanguage] = useState("en");
 
   // Whether to show the Telugu consent dialog
   const [showConsent, setShowConsent] = useState(false);
 
   // ── IP-based region detection ──────────────────────────────────
   useEffect(() => {
-    // If the user has already answered the consent dialog, skip detection.
-    const consentAnswered = localStorage.getItem(CONSENT_KEY);
-    if (consentAnswered) return;
-
-    // If there's already a saved language preference, skip detection too.
-    const savedLang = localStorage.getItem(STORAGE_KEY);
-    if (savedLang) return;
-
     detectRegion();
   }, []);
 
@@ -80,10 +66,6 @@ export function LanguageProvider({ children }) {
       // Show consent only for Telangana / Andhra Pradesh users
       if (TELUGU_REGIONS.has(region)) {
         setShowConsent(true);
-      } else {
-        // Not a Telugu region — record that we've resolved consent so we
-        // don't run the geolocation fetch on every visit.
-        localStorage.setItem(CONSENT_KEY, "no");
       }
     } catch {
       // Network failure — silently stay with English, no dialog.
@@ -92,19 +74,15 @@ export function LanguageProvider({ children }) {
 
   // ── Consent handlers ───────────────────────────────────────────
 
-  /** User clicked "అవును" — switch to Telugu and persist */
+  /** User clicked "అవును" — switch to Telugu for the current session */
   const acceptTelugu = useCallback(() => {
     setLanguage("te");
-    localStorage.setItem(STORAGE_KEY, "te");
-    localStorage.setItem(CONSENT_KEY, "yes");
     setShowConsent(false);
   }, []);
 
-  /** User clicked "No" — stay in English and persist */
+  /** User clicked "No" — stay in English for the current session */
   const rejectTelugu = useCallback(() => {
     setLanguage("en");
-    localStorage.setItem(STORAGE_KEY, "en");
-    localStorage.setItem(CONSENT_KEY, "no");
     setShowConsent(false);
   }, []);
 
