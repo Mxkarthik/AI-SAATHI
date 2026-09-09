@@ -8,6 +8,7 @@ const userRoutes = require("./routes/userRoutes");
 const profileRoutes = require("./routes/profileRoutes");
 const conversationRoutes = require("./routes/conversationRoutes");
 const messageRoutes = require("./routes/messageRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
 const authRoutes = require("./auth/authRoutes");
 
 const app = express();
@@ -45,5 +46,5 @@ app.use("/api/users", userRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/conversations/:conversationId/messages", messageRoutes);
-
+app.use("/api/transactions", transactionRoutes);
 module.exports = app;
