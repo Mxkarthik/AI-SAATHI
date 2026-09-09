@@ -124,9 +124,19 @@ test("no duplicate equipment or livestock array values are written", () => {
   }), { updated: false, changes: {} }, "result");
 });
 
-test("only explicit schema paths are returned", () => {
+test("only explicit schema paths are returned — arbitrary fields are blocked", () => {
+  // Verify that injection of arbitrary/unsafe field paths does not produce changes.
+  // existingDebt IS now explicitly handled, so it should appear in changes.
   const result = sync({ arbitraryPath: "unsafe", nested: { value: "unsafe" }, existingDebt: 1000 });
-  equal(Object.keys(result.changes), [], "changes keys");
+  const changesKeys = Object.keys(result.changes);
+  // arbitraryPath and nested must NOT appear
+  if (changesKeys.some(k => k === "arbitraryPath" || k.startsWith("nested"))) {
+    throw new Error(`Unsafe paths leaked into changes: ${changesKeys.join(", ")}`);
+  }
+  // existingDebt: 1000 IS a valid sync operation → financial.existingLoans
+  if (!changesKeys.includes("financial.existingLoans")) {
+    throw new Error(`existingDebt sync expected financial.existingLoans, got: ${changesKeys.join(", ")}`);
+  }
 });
 
 test("existing loans require a structured lender and amount", () => {

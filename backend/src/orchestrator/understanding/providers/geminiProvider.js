@@ -90,6 +90,21 @@ const RESPONSE_SCHEMA = {
       type: Type.OBJECT,
       description: "Structured entities extracted from the message. Use null for any field that cannot be confidently extracted.",
       properties: {
+        state: {
+          type: Type.STRING,
+          description: "Indian state name in English (e.g. 'Andhra Pradesh', 'Telangana'). Extract from answers like 'AP', 'Andhra', 'Telangana'. Map abbreviations to full names.",
+          nullable: true,
+        },
+        district: {
+          type: Type.STRING,
+          description: "District name within the state, if mentioned.",
+          nullable: true,
+        },
+        mandal: {
+          type: Type.STRING,
+          description: "Mandal or sub-district name, if mentioned.",
+          nullable: true,
+        },
         crop: {
           type: Type.STRING,
           description: "Crop name in English (e.g. 'paddy', 'wheat'). Map Telugu crop names to canonical English equivalents.",
@@ -97,7 +112,7 @@ const RESPONSE_SCHEMA = {
         },
         landArea: {
           type: Type.NUMBER,
-          description: "Numeric land area (e.g. 3 for '3 acres' or '3 ఎకరాలు').",
+          description: "Numeric land area (e.g. 3 for '3 acres' or '3 ఎకరాలు' or 'three acres').",
           nullable: true,
         },
         landUnit: {
@@ -106,9 +121,20 @@ const RESPONSE_SCHEMA = {
           enum: ["acre", "hectare", "bigha"],
           nullable: true,
         },
+        ownership: {
+          type: Type.STRING,
+          description: "Land ownership type. Map 'I own it', 'my own land', 'owned' to 'owned'; 'leased', 'rented', 'lease' to 'leased'; 'shared', 'joint' to 'shared'.",
+          enum: ["owned", "leased", "shared"],
+          nullable: true,
+        },
+        season: {
+          type: Type.STRING,
+          description: "Farming season if mentioned (e.g. 'kharif', 'rabi', 'zaid').",
+          nullable: true,
+        },
         amount: {
           type: Type.NUMBER,
-          description: "Monetary amount in INR. Convert Telugu number expressions (e.g. 'యాభై వేలు' → 50000, 'ఒక లక్ష' → 100000).",
+          description: "Monetary amount in INR. Convert Telugu number expressions (e.g. 'యాభై వేలు' → 50000, 'ఒక లక్ష' → 100000, 'fifty thousand' → 50000).",
           nullable: true,
         },
         equipment: {
@@ -133,18 +159,20 @@ const RESPONSE_SCHEMA = {
         },
         income: {
           type: Type.NUMBER,
-          description: "Annual or monthly income in INR if stated or strongly implied.",
+          description: "Annual income in INR if stated or strongly implied (e.g. 'I earn 2 lakh', 'income is 1.5 lakh per year', 'రెండు లక్షలు ఆదాయం').",
           nullable: true,
         },
         existingDebt: {
           type: Type.NUMBER,
-          description: "Existing loan or debt amount in INR if stated or strongly implied.",
+          description: "Existing loan or debt amount in INR if stated. Also extract when user says they have NO loans (set to 0 if user explicitly says no debt).",
           nullable: true,
         },
       },
       required: [
-        "crop", "landArea", "landUnit", "amount", "equipment",
-        "livestock", "insuranceType", "asset", "income", "existingDebt",
+        "state", "district", "mandal",
+        "crop", "landArea", "landUnit", "ownership", "season",
+        "amount", "equipment", "livestock", "insuranceType", "asset",
+        "income", "existingDebt",
       ],
       nullable: false,
     },
@@ -176,23 +204,61 @@ Rules:
 5. Extract ONLY information that is explicitly stated or strongly implied. Do NOT invent values.
 6. Set any field to null if the information is not present in the message.
 7. Do NOT provide financial advice, scheme recommendations, or eligibility information.
-8. Do NOT include any explanation or prose — return ONLY the JSON.`;
+8. Do NOT include any explanation or prose — return ONLY the JSON.
+9. Map Indian state abbreviations and short forms to full state names (e.g. AP → Andhra Pradesh, TS → Telangana, MH → Maharashtra, UP → Uttar Pradesh, KA → Karnataka, TN → Tamil Nadu).
+10. When the user says they own land ("I own it", "my land", "my own land", "sontham"), extract ownership as "owned". When they say leased/rented, extract "leased". When joint/shared, extract "shared".
+11. When extracting a "no loans" / "no debt" statement (e.g. "I don't have any loans", "no existing loans"), extract existingDebt as 0.`;
+
+// ─── Context-aware prompt builder ─────────────────────────────────────────────
+
+/**
+ * Build a user-turn prompt that includes conversation context when available.
+ * If the previous question asked for a specific field (lastAskedField), include
+ * that hint so Gemini can correctly map short answers to the right entity.
+ *
+ * @param {string} message       — the raw user message
+ * @param {string|null} lastAskedField  — the field the assistant just asked about
+ * @param {string|null} conversationIntent — the established intent (if any)
+ * @returns {string} — the prompt string to send as the user turn
+ */
+function buildUserPrompt(message, lastAskedField, conversationIntent) {
+  const lines = [];
+
+  if (conversationIntent && conversationIntent !== "general_financial_guidance") {
+    lines.push(`Current conversation intent: ${conversationIntent}`);
+  }
+
+  if (lastAskedField) {
+    lines.push(`The assistant's previous question was asking for the user's: ${lastAskedField}`);
+    lines.push(`The user's reply below is likely answering that question. Extract the relevant entity accordingly.`);
+  }
+
+  lines.push(`User message: ${message}`);
+
+  return lines.join("\n");
+}
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
  * Analyse a user message and extract structured understanding.
  *
- * @param {string} message — raw user message (Telugu, English, or mixed)
+ * @param {string} message           — raw user message (Telugu, English, or mixed)
+ * @param {object} [context]         — optional conversation context
+ * @param {string} [context.lastAskedField]      — the field the assistant just asked for
+ * @param {string} [context.conversationIntent]  — the established intent (if any)
  * @returns {Promise<object>} — structured extraction result matching RESPONSE_SCHEMA
  * @throws {Error} on missing API key, Gemini failure, or invalid response
  */
-async function understandWithGemini(message) {
+async function understandWithGemini(message, context = {}) {
   if (!message || typeof message !== "string" || message.trim() === "") {
     throw new Error("understandWithGemini: message must be a non-empty string.");
   }
 
   const client = getClient(); // throws if GEMINI_API_KEY missing
+
+  const { lastAskedField = null, conversationIntent = null } = context;
+  const userPrompt = buildUserPrompt(message.trim(), lastAskedField, conversationIntent);
 
   // ── Use the Interactions (Chat) API as recommended by Google ──────────
   let response;
@@ -207,7 +273,7 @@ async function understandWithGemini(message) {
       },
     });
 
-    response = await chat.sendMessage({ message: message.trim() });
+    response = await chat.sendMessage({ message: userPrompt });
   } catch (err) {
     throw new Error(`Gemini API call failed: ${err.message}`);
   }

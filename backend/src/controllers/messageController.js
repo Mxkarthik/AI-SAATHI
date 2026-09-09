@@ -3,6 +3,7 @@ const conversationService = require("../services/conversationService");
 const profileService = require("../services/profileService");
 const { orchestrate } = require("../orchestrator/orchestratorService");
 const { getSchemeMetadata } = require("../orchestrator/financialKnowledge/adapter/schemeRuleAdapter");
+const Message = require("../models/Message");
 
 // ─── Deterministic recommendation message builder ─────────────────────────────
 //
@@ -75,6 +76,45 @@ function buildRecommendationMessage(rec, isTelugu) {
   return lines.join("\n");
 }
 
+// ─── Transient entity fields (not persisted to FinancialProfile) ─────────────
+//
+// These entity fields cannot be stored in FinancialProfile (no schema path).
+// They must be carried forward between turns via Message.intentData so they
+// are not lost when the next user message provides a different field.
+//
+// season     — no profile field
+// amount     — no profile field (used for loan amount requested)
+// existingDebt — sync to existingLoans is conditional; raw value carries forward
+//
+const TRANSIENT_ENTITY_FIELDS = ["season", "amount", "existingDebt"];
+
+// ─── Last-turn context recovery ──────────────────────────────────────────────
+//
+// Reads the most recent assistant message in the conversation and returns:
+//   lastAskedField    — the field the assistant just asked for
+//   transientEntities — entity values collected in previous turns that have
+//                       no FinancialProfile path and must be re-injected
+//
+// We query MongoDB directly (not via messageService) because we don't need
+// ownership checking here — the conversation was already verified above.
+//
+async function getLastTurnContext(conversationId) {
+  try {
+    const lastAssistant = await Message.findOne(
+      { conversationId, role: "assistant" },
+      { intentData: 1 },
+      { sort: { createdAt: -1 } }
+    );
+    const intentData = lastAssistant?.intentData || {};
+    return {
+      lastAskedField:    intentData.nextQuestion?.field || null,
+      transientEntities: intentData.transientEntities || {},
+    };
+  } catch {
+    return { lastAskedField: null, transientEntities: {} };
+  }
+}
+
 const createMessage = async (req, res) => {
   try {
     if (!req.userId) {
@@ -106,6 +146,13 @@ const createMessage = async (req, res) => {
     // Load FinancialProfile (may be null, orchestrator handles this)
     const profile = await profileService.getProfileByUserId(req.userId);
 
+    // Recover the field the assistant asked about in the previous turn,
+    // plus any transient entities (season, amount, existingDebt) that were
+    // collected in prior turns but cannot be persisted in FinancialProfile.
+    // Both are passed to the orchestrator so the understanding service gets
+    // proper context and knownFields is populated correctly.
+    const { lastAskedField, transientEntities } = await getLastTurnContext(conversationId);
+
     // Call orchestrate
     let orchestration;
     try {
@@ -113,7 +160,9 @@ const createMessage = async (req, res) => {
         userId: req.userId,
         conversation,
         profile,
-        message: content
+        message: content,
+        lastAskedField,
+        transientEntities,
       });
     } catch (err) {
       console.error("Orchestrator error:", err);
@@ -168,14 +217,32 @@ const createMessage = async (req, res) => {
       }
     }
 
-    // Persist assistant message
+    // Build the transient entities map to carry forward to the next turn.
+    // These are entity values that cannot be persisted in FinancialProfile
+    // (no schema path). We merge: previous transientEntities + any new
+    // transient fields extracted this turn.
+    const currentEntities = orchestration.understanding?.entities || {};
+    const nextTransientEntities = { ...transientEntities };
+    for (const field of TRANSIENT_ENTITY_FIELDS) {
+      if (currentEntities[field] !== undefined && currentEntities[field] !== null) {
+        nextTransientEntities[field] = currentEntities[field];
+      }
+    }
+
+    // Persist assistant message — include intentData so the next turn can
+    // recover lastAskedField and transientEntities via getLastTurnContext().
     const assistantMessage = await messageService.createMessage(
       conversationId,
       req.userId,
       { 
         role: "assistant", 
         content: assistantMessageContent, 
-        language: assistantMessageLanguage 
+        language: assistantMessageLanguage,
+        intentData: {
+          status:            orchestration.status,
+          nextQuestion:      orchestration.nextQuestion || null,
+          transientEntities: nextTransientEntities,
+        },
       }
     );
 

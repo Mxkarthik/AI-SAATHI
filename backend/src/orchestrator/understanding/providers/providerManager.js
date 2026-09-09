@@ -32,16 +32,16 @@ function getProvider() {
 
   switch (aiProvider) {
     case "gemini":
-      return { understand: understandWithGemini };
+      return { understand: (message, context) => understandWithGemini(message, context) };
 
     case "ollama":
-      return { understand: understandWithOllama };
+      return { understand: (message, context) => understandWithOllama(message, context) };
 
     default:
       console.warn(
         `providerManager: unknown AI_PROVIDER="${aiProvider}", falling back to gemini.`
       );
-      return { understand: understandWithGemini };
+      return { understand: (message, context) => understandWithGemini(message, context) };
   }
 }
 

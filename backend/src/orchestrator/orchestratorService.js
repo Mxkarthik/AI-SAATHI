@@ -168,11 +168,13 @@ function buildIntentClarificationQuestion(language) {
  * Run one orchestration turn.
  *
  * @param {object}      params
- * @param {string}      [params.userId]       — authenticated user ID (informational)
- * @param {object}      params.conversation   — Conversation document or plain object
- * @param {object|null} [params.profile]      — FinancialProfile document or null
- * @param {string}      params.message        — the user's raw message text
- * @returns {Promise<object>}                 — orchestration result (see above)
+ * @param {string}      [params.userId]              — authenticated user ID (informational)
+ * @param {object}      params.conversation          — Conversation document or plain object
+ * @param {object|null} [params.profile]             — FinancialProfile document or null
+ * @param {string}      params.message               — the user's raw message text
+ * @param {string|null} [params.lastAskedField]      — field the assistant asked for last turn
+ * @param {object}      [params.transientEntities]   — non-profile entity values from prior turns
+ * @returns {Promise<object>}                        — orchestration result (see above)
  * @throws  {Error} on invalid input or unrecoverable pipeline failure
  */
 async function orchestrate(params) {
@@ -181,7 +183,7 @@ async function orchestrate(params) {
     throw new Error("orchestrate: argument must be a non-null object.");
   }
 
-  const { userId, conversation, profile, message } = params;
+  const { userId, conversation, profile, message, lastAskedField = null, transientEntities = {} } = params;
 
   if (typeof message !== "string" || message.trim() === "") {
     throw new Error("orchestrate: `message` must be a non-empty string.");
@@ -194,9 +196,18 @@ async function orchestrate(params) {
   // profile is allowed to be null/undefined — new users have no profile yet
 
   // ── Step 1: Understand the current message ────────────────────────────────
+  // Pass lastAskedField and conversationIntent as context hints so the
+  // AI provider can correctly map short answers (e.g. "Andhra Pradesh",
+  // "3 acres", "paddy") to the right entity field.
   let understanding;
   try {
-    understanding = await understandingService.understandMessage(message.trim());
+    understanding = await understandingService.understandMessage(
+      message.trim(),
+      {
+        lastAskedField:     lastAskedField || null,
+        conversationIntent: conversation.intent || null,
+      }
+    );
   } catch (err) {
     const wrapped = new Error(
       `orchestrate: understanding step failed — ${err.message}`
@@ -228,9 +239,22 @@ async function orchestrate(params) {
   }
 
   // ── Step 3: Build normalised context from the updated profile ────────────
+  // Merge transientEntities (season, amount, existingDebt from prior turns)
+  // into the understanding entities so contextService sees them in knownFields.
+  // Current-turn entities take precedence if they provide the same field.
+  const understandingWithTransients = (transientEntities && Object.keys(transientEntities).length > 0)
+    ? {
+        ...understanding,
+        entities: {
+          ...transientEntities,   // prior transient values (lower precedence)
+          ...understanding.entities, // current turn entities override
+        },
+      }
+    : understanding;
+
   let context;
   try {
-    context = buildContext({ profile: syncedProfile, conversation, understanding });
+    context = buildContext({ profile: syncedProfile, conversation, understanding: understandingWithTransients });
   } catch (err) {
     const wrapped = new Error(
       `orchestrate: context step failed — ${err.message}`

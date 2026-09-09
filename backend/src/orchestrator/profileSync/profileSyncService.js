@@ -136,9 +136,9 @@ function deriveProfileSync({ userId, understanding, profile = null } = {}) {
 
   assignString("irrigation", "irrigation.typeOrSource", profile?.irrigation?.typeOrSource);
 
-  // Generic `income` is intentionally not synced: current understanding does
-  // not identify whether it is farm or other income. Explicit source-labelled
-  // entities can be safely persisted if introduced by a provider later.
+  // Generic `income` maps to farmIncome when no source-labelled income is present.
+  // This allows "I earn 2 lakh" → income entity → synced to farmIncome.
+  // We do NOT sync if the message already provides explicit farmIncome.
   for (const [entityName, path, existing] of [
     ["farmIncome", "financial.farmIncome", profile?.financial?.farmIncome],
     ["otherIncome", "financial.otherIncome", profile?.financial?.otherIncome],
@@ -146,6 +146,34 @@ function deriveProfileSync({ userId, understanding, profile = null } = {}) {
   ]) {
     const value = nonNegativeNumber(entities[entityName]);
     if (value !== null && value !== existing) changes[path] = value;
+  }
+  // Generic `income` entity: use as farmIncome only when no explicit farmIncome provided
+  if (!("financial.farmIncome" in changes)) {
+    const genericIncome = nonNegativeNumber(entities.income);
+    if (genericIncome !== null && genericIncome !== profile?.financial?.farmIncome) {
+      changes["financial.farmIncome"] = genericIncome;
+    }
+  }
+
+  // existingDebt entity: sync as a single-entry existingLoans record when
+  // the user provides a debt amount (including 0 for "no loans").
+  // Only sync if existingDebt is explicitly present (non-null/undefined).
+  if (entities.existingDebt !== null && entities.existingDebt !== undefined) {
+    const debtValue = nonNegativeNumber(entities.existingDebt);
+    if (debtValue !== null) {
+      const currentLoans = profile?.financial?.existingLoans || [];
+      // Only add the record if no loans already exist at this amount
+      const alreadyHas = Array.isArray(currentLoans) &&
+        currentLoans.some((loan) => loan && loan.amount === debtValue);
+      if (!alreadyHas) {
+        const newLoans = debtValue === 0
+          ? []  // "no loans" → clear existing loans list
+          : appendUniqueLoans(currentLoans, [{ lender: "existing", amount: debtValue }]);
+        if (JSON.stringify(newLoans) !== JSON.stringify(currentLoans)) {
+          changes["financial.existingLoans"] = newLoans;
+        }
+      }
+    }
   }
 
   const equipmentValues = valuesFrom(entities.equipment);
