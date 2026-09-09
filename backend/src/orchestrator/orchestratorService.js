@@ -73,6 +73,7 @@ const { getNextQuestion }     = require("./questions/nextQuestionService");
 const { deriveConversationState } = require("./state/conversationStateService");
 const { deriveProfileSync } = require("./profileSync/profileSyncService");
 const { buildDecisionContext } = require("./decisionContext/decisionContextService");
+const { evaluateAllApplicableSchemes } = require("./financialKnowledge");
 const profileService = require("../services/profileService");
 
 // ─── Intent continuity ────────────────────────────────────────────────────────
@@ -237,6 +238,23 @@ async function orchestrate(params) {
       conversationState,
     });
 
+    // ── Eligibility evaluation (only when both conditions are met) ──────────
+    // Condition 1: conversationState.stage === "ready_for_decision"
+    // Condition 2: decisionContext.status === "ready"
+    let eligibility = null;
+    if (
+      conversationState.stage === "ready_for_decision" &&
+      decisionContext.status === "ready"
+    ) {
+      try {
+        eligibility = evaluateAllApplicableSchemes(decisionContext);
+      } catch (err) {
+        // Eligibility failure should not break the orchestration response.
+        // Log and continue — the eligibility field will be null.
+        console.error(`orchestrate: eligibility evaluation failed — ${err.message}`);
+      }
+    }
+
     return {
       status:         "ready_for_decision",
       language,
@@ -248,6 +266,7 @@ async function orchestrate(params) {
       conversationState,
       decisionContext,
       profileSync,
+      eligibility,
     };
   }
 
@@ -283,6 +302,7 @@ async function orchestrate(params) {
     conversationState,
     decisionContext,
     profileSync,
+    eligibility:    null,   // eligibility only runs when status = ready_for_decision
   };
 }
 
