@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { getConversation, getMessages, sendMessage } from "../../services/aiSaathiApi";
 import AiParticipant from "./AiParticipant";
@@ -55,12 +55,9 @@ export default function CallInterface({ user, conversationId, onLeave }) {
     return () => { active = false; };
   }, [conversationId, language]);
 
-  const currentMessage = useMemo(() => {
-    const nextQuestion = orchestration?.nextQuestion?.question;
-    if (nextQuestion) return nextQuestion;
-    const assistantMessages = messages.filter((message) => message.role === "assistant");
-    return assistantMessages.at(-1)?.content || "";
-  }, [messages, orchestration]);
+  const activeQuestion = orchestration?.status === "needs_information"
+    ? orchestration.nextQuestion?.question || ""
+    : "";
 
   const isReadyForDecision = orchestration?.conversationState?.stage === "ready_for_decision"
     && orchestration?.decisionContext?.status === "ready";
@@ -105,7 +102,10 @@ export default function CallInterface({ user, conversationId, onLeave }) {
           <AiParticipant aiState={loadingConversation ? "thinking" : aiState} />
           <UserParticipant user={user} />
         </div>
-        <CurrentMessage message={loadingConversation ? "" : currentMessage} />
+        <CurrentMessage
+          message={loadingConversation ? "" : activeQuestion}
+          ready={isReadyForDecision}
+        />
         {isReadyForDecision && !recommendation && (
           <p className="rounded-xl border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-sm text-yellow-200" aria-live="polite">
             {t("schemeAI", "understandingOptions")}
@@ -114,6 +114,7 @@ export default function CallInterface({ user, conversationId, onLeave }) {
         <MessageComposer disabled={loadingConversation || submitting} onSend={handleSend} />
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.6fr)]">
           <SituationPanel
+            context={orchestration?.context}
             decisionContext={orchestration?.decisionContext}
             informationGap={orchestration?.informationGap}
           />

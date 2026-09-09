@@ -7,20 +7,24 @@ function formatField(field, value) {
   return String(value);
 }
 
-export default function SituationPanel({ decisionContext, informationGap }) {
+export default function SituationPanel({ context, decisionContext, informationGap }) {
   const { t } = useLanguage();
   const user = decisionContext?.user || {};
   const farming = user.farming || {};
   const location = user.location || {};
   const financial = user.financial || {};
+  const knownFields = context?.knownFields || {};
+  const resolvedLocation = { state: location.state ?? knownFields.state, district: location.district ?? knownFields.district };
+  const resolvedFarming = { ...farming, crops: farming.crops ?? knownFields.crops ?? (knownFields.crop ? [knownFields.crop] : undefined), landArea: farming.landArea ?? knownFields.landArea, landUnit: farming.landUnit ?? knownFields.landUnit };
+  const resolvedFinancial = { ...financial, amount: financial.amount ?? knownFields.amount };
   const known = [
-    ["State", location.state],
-    ["District", location.district],
-    ["Crop", farming.crops],
-    ["Land", farming.landArea && farming.landUnit ? `${farming.landArea} ${farming.landUnit}` : farming.landArea],
-    ["Equipment", user.assets?.equipment],
-    ["Livestock", user.assets?.livestock],
-    ["Amount", financial.amount],
+    ["State", resolvedLocation.state],
+    ["District", resolvedLocation.district],
+    ["Crop", resolvedFarming.crops],
+    ["Land", resolvedFarming.landArea && resolvedFarming.landUnit ? `${resolvedFarming.landArea} ${resolvedFarming.landUnit}` : resolvedFarming.landArea],
+    ["Equipment", user.assets?.equipment ?? knownFields.equipment],
+    ["Livestock", user.assets?.livestock ?? knownFields.livestock],
+    ["Amount", resolvedFinancial.amount],
   ].filter(([, value]) => value !== undefined && value !== null && value !== "" && !(Array.isArray(value) && value.length === 0));
   const missing = informationGap?.missingFields || [];
 
