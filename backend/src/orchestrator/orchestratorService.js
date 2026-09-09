@@ -73,7 +73,10 @@ const { getNextQuestion }     = require("./questions/nextQuestionService");
 const { deriveConversationState } = require("./state/conversationStateService");
 const { deriveProfileSync } = require("./profileSync/profileSyncService");
 const { buildDecisionContext } = require("./decisionContext/decisionContextService");
-const { evaluateAllApplicableSchemes } = require("./financialKnowledge");
+const {
+  evaluateAllApplicableSchemes,
+  buildRecommendations,
+} = require("./financialKnowledge");
 const profileService = require("../services/profileService");
 
 // ─── Intent continuity ────────────────────────────────────────────────────────
@@ -126,6 +129,36 @@ function applyConversationContinuity(understanding, conversation) {
   return {
     ...understanding,
     intent: existingIntent,
+  };
+}
+
+// ─── Intent clarification ─────────────────────────────────────────────────────
+
+/**
+ * Build a deterministic intent-clarification question.
+ *
+ * Called when the understanding layer returned the generic fallback intent
+ * (general_financial_guidance) and conversationState.stage is therefore
+ * "intent_detection".  We must ask the user to clarify what they need
+ * before any information-collection can begin.
+ *
+ * This is intentionally static — no Gemini call, no field resolution.
+ * The question service handles specific field prompts; this is a
+ * higher-level clarification concern.
+ *
+ * @param {string} language — "en" | "te"
+ * @returns {{ field: string, question: string, language: string, source: string }}
+ */
+function buildIntentClarificationQuestion(language) {
+  const lang = language === "te" ? "te" : "en";
+  const question = lang === "te"
+    ? "మీకు ఏ రకమైన ఆర్థిక సహాయం కావాలి? ఉదాహరణకు: పంట రుణం, పరికరాల కొనుగోలు, పశుపోషణ, బీమా, పొదుపు లేదా పెట్టుబడి?"
+    : "What kind of financial help are you looking for? For example: crop loan, equipment purchase, livestock, insurance, savings, or investment?";
+  return {
+    field:    "intent",
+    question,
+    language: lang,
+    source:   "fallback",
   };
 }
 
@@ -222,9 +255,25 @@ async function orchestrate(params) {
 
   // ── Step 4: Determine next action ─────────────────────────────────────────
 
-  // All required fields are collected → ready for a decision
-  if (informationGap.isComplete) {
-    const nextQuestion = null;
+  // Derive conversation stage FIRST — conversationState.stage is the single
+  // source of truth for the top-level orchestration status.
+  //
+  // KEY FIX: informationGap.isComplete can be true for general_financial_guidance
+  // (because it has requiredFields: []) while the intent is still ambiguous.
+  // conversationStateService already accounts for this: when intent is the
+  // generic fallback, it sets stage = "intent_detection" regardless of
+  // isComplete.  We must honour that stage here rather than short-circuiting
+  // on informationGap.isComplete.
+
+  // Branch A: information gap is still open (missing fields remain OR intent
+  // is not yet specific enough to consider collection complete).
+  // We ask the next question.
+  if (!informationGap.isComplete || informationGap.missingFields.length > 0) {
+    const nextQuestion = await getNextQuestion({
+      missingFields: informationGap.missingFields,
+      context,
+      language,
+    });
     const conversationState = deriveConversationState({
       conversation,
       intent,
@@ -238,25 +287,8 @@ async function orchestrate(params) {
       conversationState,
     });
 
-    // ── Eligibility evaluation (only when both conditions are met) ──────────
-    // Condition 1: conversationState.stage === "ready_for_decision"
-    // Condition 2: decisionContext.status === "ready"
-    let eligibility = null;
-    if (
-      conversationState.stage === "ready_for_decision" &&
-      decisionContext.status === "ready"
-    ) {
-      try {
-        eligibility = evaluateAllApplicableSchemes(decisionContext);
-      } catch (err) {
-        // Eligibility failure should not break the orchestration response.
-        // Log and continue — the eligibility field will be null.
-        console.error(`orchestrate: eligibility evaluation failed — ${err.message}`);
-      }
-    }
-
     return {
-      status:         "ready_for_decision",
+      status:         "needs_information",
       language,
       intent,
       understanding,
@@ -266,18 +298,15 @@ async function orchestrate(params) {
       conversationState,
       decisionContext,
       profileSync,
-      eligibility,
+      eligibility:    null,
+      recommendation: null,
     };
   }
 
-  // ── Step 5: Generate the next question ────────────────────────────────────
-  // nextQuestionService already has its own Gemini fallback — we do not
-  // duplicate that here. A null return is valid (unknown field, both paths fail).
-  const nextQuestion = await getNextQuestion({
-    missingFields: informationGap.missingFields,
-    context,
-    language,
-  });
+  // Branch B: informationGap.isComplete === true.
+  // Build conversationState now so we can inspect the stage before deciding
+  // whether we are genuinely ready for a decision.
+  const nextQuestion = null;
   const conversationState = deriveConversationState({
     conversation,
     intent,
@@ -291,8 +320,67 @@ async function orchestrate(params) {
     conversationState,
   });
 
+  // If the stage is not "ready_for_decision" (e.g. stage = "intent_detection"
+  // because the intent is still the generic fallback), we must NOT return
+  // status: "ready_for_decision".  Instead, emit a needs_information response
+  // with an intent-clarification question.
+  if (conversationState.stage !== "ready_for_decision" &&
+      conversationState.stage !== "completed") {
+
+    // Build a static intent-clarification question.
+    // We do NOT call getNextQuestion with missingFields:[] (it returns null).
+    // Intent clarification is not a field-collection step — it is a separate
+    // concern: we need to understand what the user actually wants to do.
+    const clarifyingQuestion = buildIntentClarificationQuestion(language);
+
+    return {
+      status:         "needs_information",
+      language,
+      intent,
+      understanding,
+      context,
+      informationGap,
+      nextQuestion:   clarifyingQuestion,
+      conversationState,
+      decisionContext,
+      profileSync,
+      eligibility:    null,
+      recommendation: null,
+    };
+  }
+
+  // Branch C: stage is genuinely "ready_for_decision" or "completed".
+  // Run eligibility + recommendation engines.
+
+  // ── Eligibility evaluation (only when both conditions are met) ──────────
+  // Condition 1: conversationState.stage === "ready_for_decision"
+  // Condition 2: decisionContext.status === "ready"
+  let eligibility = null;
+  let recommendation = null;
+  if (
+    conversationState.stage === "ready_for_decision" &&
+    decisionContext.status === "ready"
+  ) {
+    try {
+      eligibility = evaluateAllApplicableSchemes(decisionContext);
+    } catch (err) {
+      // Eligibility failure should not break the orchestration response.
+      // Log and continue — the eligibility field will be null.
+      console.error(`orchestrate: eligibility evaluation failed — ${err.message}`);
+    }
+
+    if (eligibility) {
+      try {
+        recommendation = buildRecommendations({ decisionContext, eligibility });
+      } catch (err) {
+        // Recommendation failure should not break the orchestration response.
+        console.error(`orchestrate: recommendation generation failed — ${err.message}`);
+      }
+    }
+  }
+
   return {
-    status:         "needs_information",
+    status:         conversationState.stage === "completed" ? "completed" : "ready_for_decision",
     language,
     intent,
     understanding,
@@ -302,7 +390,8 @@ async function orchestrate(params) {
     conversationState,
     decisionContext,
     profileSync,
-    eligibility:    null,   // eligibility only runs when status = ready_for_decision
+    eligibility,
+    recommendation,
   };
 }
 

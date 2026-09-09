@@ -47,6 +47,11 @@ function buildDecisionContext({ context, informationGap, conversationState } = {
     farming.crops = [copyValue(knownFields.crop)];
   }
 
+  const intentSpecific = projectFields(knownFields, [
+    "insuranceType", "asset", "savingsGoal", "investmentAmount",
+    "investmentPeriod", "riskPreference",
+  ]);
+
   return {
     status: gap.isComplete === true ? "ready" : "incomplete",
     intent: state.intent ?? gap.intent ?? context?.currentMessage?.intent ?? null,
@@ -60,6 +65,7 @@ function buildDecisionContext({ context, informationGap, conversationState } = {
         "income", "existingDebt", "amount",
       ]),
       assets: projectFields(knownFields, ["equipment", "livestock"]),
+      intentSpecific,
     },
     decision: {
       collectedFields: Array.isArray(gap.collectedFields) ? gap.collectedFields.slice() : [],

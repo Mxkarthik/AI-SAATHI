@@ -19,6 +19,7 @@ const {
   getAllSchemeIds,
   SCHEME_INTENT_MAP,
 } = require("./adapter/schemeRuleAdapter");
+const { buildRecommendations } = require("./recommendation/recommendationService");
 
 module.exports = {
   // Eligibility
@@ -34,4 +35,5 @@ module.exports = {
   getSchemeMetadata,
   getAllSchemeIds,
   SCHEME_INTENT_MAP,
+  buildRecommendations,
 };

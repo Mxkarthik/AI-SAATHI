@@ -31,6 +31,9 @@ const COMPLETE_CONTEXT = {
     existingDebt: 10000, farmIncome: 180000, otherIncome: 20000,
     monthlyExpenses: 8000, existingLoans: [{ lender: "SBI", amount: 10000 }],
     equipment: ["pump"], livestock: ["cow"],
+    insuranceType: "crop insurance", asset: "paddy crop",
+    savingsGoal: "emergency fund", investmentAmount: 25000,
+    investmentPeriod: "3 years", riskPreference: "moderate",
   },
 };
 
@@ -64,6 +67,55 @@ test("context facts are projected under user location, farming, financial, and a
   equal(user.farming, { landArea: 3, landUnit: "acres", ownership: "owned", irrigation: "borewell", season: "kharif", crops: ["paddy"] }, "farming");
   equal(user.financial.farmIncome, 180000, "farmIncome");
   equal(user.assets, { equipment: ["pump"], livestock: ["cow"] }, "assets");
+  equal(user.intentSpecific, {
+    insuranceType: "crop insurance",
+    asset: "paddy crop",
+    savingsGoal: "emergency fund",
+    investmentAmount: 25000,
+    investmentPeriod: "3 years",
+    riskPreference: "moderate",
+  }, "intent-specific fields");
+});
+
+test("intent-specific fields are projected additively without defaults", () => {
+  const result = buildDecisionContext({
+    context: { knownFields: { insuranceType: "crop insurance", savingsGoal: "" } },
+    informationGap: { isComplete: false },
+    conversationState: { intent: "insurance", language: "en" },
+  });
+  equal(result.user.intentSpecific, { insuranceType: "crop insurance" }, "available fields");
+  equal(Object.prototype.hasOwnProperty.call(result.user.intentSpecific, "asset"), false, "missing asset");
+  equal(Object.prototype.hasOwnProperty.call(result.user.intentSpecific, "investmentAmount"), false, "missing investment amount");
+  equal(Object.prototype.hasOwnProperty.call(result.user.intentSpecific, "riskPreference"), false, "missing risk preference");
+});
+
+test("null, undefined, and empty intent-specific values stay absent", () => {
+  const result = buildDecisionContext({
+    context: {
+      knownFields: {
+        insuranceType: null,
+        asset: undefined,
+        savingsGoal: "",
+        investmentAmount: null,
+        investmentPeriod: "   ",
+        riskPreference: undefined,
+      },
+    },
+    informationGap: { isComplete: false },
+    conversationState: { intent: "investment", language: "en" },
+  });
+  equal(result.user.intentSpecific, {}, "no fabricated intent-specific values");
+});
+
+test("crop, equipment, and livestock remain compatible", () => {
+  const result = buildDecisionContext({
+    context: { knownFields: { crop: "paddy", equipment: ["tractor"], livestock: ["cow"] } },
+    informationGap: { isComplete: false },
+    conversationState: { intent: "crop_financing", language: "en" },
+  });
+  equal(result.user.farming.crops, ["paddy"], "crop");
+  equal(result.user.assets.equipment, ["tractor"], "equipment");
+  equal(result.user.assets.livestock, ["cow"], "livestock");
 });
 
 test("a current-message singular crop is normalized into farming.crops", () => {
