@@ -22,7 +22,7 @@
  *   - recommend financial products or schemes
  *   - perform financial calculations
  *   - access MongoDB, FinancialProfile, Conversation, or Message models
- *   - call Vapi or any voice provider
+ *   - call any external voice provider
  *   - interpret the user's answer
  *   - extract entities from the user's answer
  *
