@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { getConversation, getMessages, sendMessage } from "../../services/aiSaathiApi";
+import { useSarvamRecorder } from "../../hooks/useSarvamRecorder";
+import { useSarvamTts } from "../../hooks/useSarvamTts";
 import AiParticipant from "./AiParticipant";
 import CallControls from "./CallControls";
 import CallHeader from "./CallHeader";
@@ -8,21 +10,92 @@ import CurrentMessage from "./CurrentMessage";
 import MessageComposer from "./MessageComposer";
 import RecommendationPanel from "./RecommendationPanel";
 import SituationPanel from "./SituationPanel";
+import SarvamTtsTester from "./SarvamTtsTester";
 import TranscriptPreview from "./TranscriptPreview";
 import UserParticipant from "./UserParticipant";
 
 export default function CallInterface({ user, conversationId, onLeave }) {
   const { t, language } = useLanguage();
-  const [isMuted, setIsMuted] = useState(false);
   const [aiState, setAiState] = useState("ready");
   const [duration, setDuration] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [orchestration, setOrchestration] = useState(null);
+  const [currentLanguage, setCurrentLanguage] = useState(language);
   const [loadingConversation, setLoadingConversation] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [retryMessage, setRetryMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const handleTtsStatus = useCallback((status) => {
+    if (status === "generating") setAiState("thinking");
+    else if (status === "playing") setAiState("speaking");
+    else if (status === "finished") setAiState("ready");
+    else if (status === "error") setAiState("error");
+  }, []);
+  const { error: ttsError, speak, stopSpeaking } = useSarvamTts({ onStatusChange: handleTtsStatus });
+  const handleVoiceStatus = useCallback((status) => {
+    if (status === "recording") setAiState("listening");
+    else if (status === "transcribing") setAiState("thinking");
+    else if (status === "error") setAiState("error");
+    else if (status === "idle") setAiState("ready");
+  }, []);
+
+  const handleSend = useCallback(async (content, restoreMessage, messageLanguage = currentLanguage) => {
+    if (submitting) return;
+    const transcript = content.trim();
+    if (!transcript) return;
+
+    setSubmitting(true);
+    setError("");
+    setAiState("thinking");
+    console.log("[AI-SAATHI] Sending transcript to backend:", transcript);
+
+    try {
+      const response = await sendMessage(conversationId, {
+        content: transcript,
+        language: messageLanguage,
+      });
+      const result = response?.data;
+      if (!result?.orchestration || !result.userMessage || !result.assistantMessage) {
+        throw new Error("The backend returned an incomplete response. Please try again.");
+      }
+
+      console.log("[AI-SAATHI] Backend response:", result);
+      console.log("[AI-SAATHI] Next question:", result.orchestration.nextQuestion?.question || null);
+      setMessages((current) => [...current, result.userMessage, result.assistantMessage]);
+      setOrchestration(result.orchestration);
+      if (result.orchestration.language === "en" || result.orchestration.language === "te") {
+        setCurrentLanguage(result.orchestration.language);
+      }
+      void speak(
+        result.assistantMessage.content,
+        result.orchestration.language || result.assistantMessage.language || currentLanguage,
+      );
+    } catch (sendError) {
+      restoreMessage?.();
+      setError(sendError.message || "Unable to process your message. Please try again.");
+      setAiState("error");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [conversationId, currentLanguage, speak, submitting]);
+
+  const handleVoiceTranscript = useCallback((transcript, languageCode) => {
+    console.log("[AI-SAATHI] Sarvam transcript language:", languageCode || "unknown");
+    const detectedLanguage = languageCode?.toLowerCase().startsWith("te")
+      ? "te"
+      : languageCode?.toLowerCase().startsWith("en")
+        ? "en"
+        : currentLanguage;
+    setCurrentLanguage(detectedLanguage);
+    handleSend(transcript, undefined, detectedLanguage);
+  }, [currentLanguage, handleSend]);
+
+  const {
+    status: recorderStatus,
+    error: recorderError,
+    startRecording,
+    stopRecording,
+  } = useSarvamRecorder({ onTranscript: handleVoiceTranscript, onStatusChange: handleVoiceStatus });
 
   useEffect(() => {
     const timer = window.setInterval(() => setDuration((value) => value + 1), 1000);
@@ -35,16 +108,12 @@ export default function CallInterface({ user, conversationId, onLeave }) {
       setLoadingConversation(true);
       setError("");
       try {
-        const [conversationResult, messagesResult] = await Promise.all([
+        const [, messagesResult] = await Promise.all([
           getConversation(conversationId),
           getMessages(conversationId),
         ]);
         if (!active) return;
         setMessages(Array.isArray(messagesResult.messages) ? messagesResult.messages : []);
-        const conversation = conversationResult.conversation;
-        if (conversation?.language && conversation.language !== language) {
-          // Backend language is authoritative for future message submissions.
-        }
       } catch (loadError) {
         if (active) setError(loadError.message);
       } finally {
@@ -55,38 +124,17 @@ export default function CallInterface({ user, conversationId, onLeave }) {
     return () => { active = false; };
   }, [conversationId, language]);
 
+  const isReadyForDecision = orchestration?.conversationState?.stage === "ready_for_decision"
+    && orchestration?.decisionContext?.status === "ready";
   const activeQuestion = orchestration?.status === "needs_information"
     ? orchestration.nextQuestion?.question || ""
     : "";
-
-  const isReadyForDecision = orchestration?.conversationState?.stage === "ready_for_decision"
-    && orchestration?.decisionContext?.status === "ready";
   const recommendation = isReadyForDecision ? orchestration?.recommendation : null;
 
-  const handleSend = async (content, restoreMessage) => {
-    if (submitting) return;
-    setSubmitting(true);
-    setRetryMessage("");
-    setError("");
-    setAiState("thinking");
-    try {
-      const response = await sendMessage(conversationId, { content, language });
-      const result = response?.data;
-      if (!result?.orchestration || !result.userMessage || !result.assistantMessage) {
-        throw new Error("The backend returned an incomplete response. Please try again.");
-      }
-      setMessages((current) => [...current, result.userMessage, result.assistantMessage]);
-      setOrchestration(result.orchestration);
-      setAiState(result.orchestration.nextQuestion ? "speaking" : "ready");
-    } catch (sendError) {
-      restoreMessage();
-      setRetryMessage(content);
-      setError(sendError.message);
-      setAiState("error");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  useEffect(() => {
+    if (recorderError) setError(recorderError);
+    if (ttsError) setError(ttsError);
+  }, [recorderError, ttsError]);
 
   return (
     <div className="relative min-h-full overflow-hidden bg-gray-950 text-white">
@@ -95,7 +143,6 @@ export default function CallInterface({ user, conversationId, onLeave }) {
         {error && (
           <div className="flex flex-col gap-3 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200 sm:flex-row sm:items-center sm:justify-between" role="alert">
             <span>{error}</span>
-            {retryMessage && <span className="text-xs text-red-300">{t("schemeAI", "retryBySending")}</span>}
           </div>
         )}
         <div className="grid gap-4 lg:grid-cols-2">
@@ -103,15 +150,11 @@ export default function CallInterface({ user, conversationId, onLeave }) {
           <UserParticipant user={user} />
         </div>
         <CurrentMessage
-          message={loadingConversation ? "" : activeQuestion}
+          message={activeQuestion}
           ready={isReadyForDecision}
         />
-        {isReadyForDecision && !recommendation && (
-          <p className="rounded-xl border border-yellow-400/20 bg-yellow-400/5 px-4 py-3 text-sm text-yellow-200" aria-live="polite">
-            {t("schemeAI", "understandingOptions")}
-          </p>
-        )}
         <MessageComposer disabled={loadingConversation || submitting} onSend={handleSend} />
+        <SarvamTtsTester />
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.6fr)]">
           <SituationPanel
             context={orchestration?.context}
@@ -123,9 +166,13 @@ export default function CallInterface({ user, conversationId, onLeave }) {
         <TranscriptPreview messages={messages} />
         <div className="flex flex-col items-center gap-3 border-t border-gray-800 pt-5">
           <CallControls
-            isMuted={isMuted}
-            onToggleMute={() => setIsMuted((value) => !value)}
-            onLeave={onLeave}
+            isMuted={false}
+            voiceStatus="disconnected"
+            recorderStatus={recorderStatus}
+            onToggleMute={() => {}}
+            onStartVoice={startRecording}
+            onStopVoice={stopRecording}
+            onLeave={() => { stopSpeaking(); onLeave(); }}
             onSettings={() => setSettingsOpen((value) => !value)}
           />
           <p className="min-h-5 text-center text-xs text-gray-500" aria-live="polite">
