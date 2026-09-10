@@ -10,6 +10,7 @@ import InvestmentAssistant from "./pages/InvestmentAssistant";
 import BudgetAssistant from "./pages/BudgetAssistant";
 import Community from "./pages/Community";
 import LoanAssistant from "./pages/LoanAssistant";
+import SchemeAI from "./pages/SchemeAI";
 
 // Layout
 import Sidebar from "./components/Layouts/Sidebar";
@@ -79,6 +80,7 @@ const App = () => {
               <Route path="/budget-assistant"       element={<BudgetAssistant />} />
               <Route path="/community"              element={<Community />} />
               <Route path="/loan-assistant"         element={<LoanAssistant />} />
+              <Route path="/scheme-ai"               element={<SchemeAI />} />
             </Routes>
           </main>
         </div>

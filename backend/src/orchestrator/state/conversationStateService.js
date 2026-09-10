@@ -1,82 +1,55 @@
-const intentDefinitions = {
-  crop_financing: {
-    name: "Crop Financing",
+"use strict";
 
-    requiredFields: [
-      "location",
-      "crop",
-      "landArea",
-      "ownership",
-      "season",
-      "amount",
-      "income",
-      "existingDebt"
-    ]
-  },
+// Pure projection of the current turn. Information-gap analysis remains the
+// sole authority for required, collected, and missing fields.
+const AMBIGUOUS_INTENT = "general_financial_guidance";
 
-  equipment_financing: {
-    name: "Equipment Financing",
+function hasIntent(intent) {
+  return typeof intent === "string" &&
+    intent.trim() !== "" &&
+    intent !== AMBIGUOUS_INTENT;
+}
 
-    requiredFields: [
-      "location",
-      "equipment",
-      "landArea",
-      "income",
-      "amount",
-      "existingDebt"
-    ]
-  },
+function deriveConversationState({
+  conversation = null,
+  intent,
+  language,
+  informationGap = null,
+  nextQuestion = null,
+} = {}) {
+  const effectiveIntent = intent || conversation?.intent || null;
+  const effectiveLanguage = language || conversation?.language || "en";
+  const collectedFields = Array.isArray(informationGap?.collectedFields)
+    ? informationGap.collectedFields.slice()
+    : [];
+  const missingFields = Array.isArray(informationGap?.missingFields)
+    ? informationGap.missingFields.slice()
+    : [];
+  const isComplete = informationGap?.isComplete === true;
+  const lastAskedField = typeof nextQuestion?.field === "string" && nextQuestion.field.trim() !== ""
+    ? nextQuestion.field
+    : null;
 
-  livestock_financing: {
-    name: "Livestock Financing",
-
-    requiredFields: [
-      "location",
-      "livestock",
-      "income",
-      "amount",
-      "existingDebt"
-    ]
-  },
-
-  insurance: {
-    name: "Insurance",
-
-    requiredFields: [
-      "location",
-      "insuranceType",
-      "asset"
-    ]
-  },
-
-  savings: {
-    name: "Savings",
-
-    requiredFields: [
-      "location",
-      "income",
-      "monthlyExpenses",
-      "savingsGoal"
-    ]
-  },
-
-  investment: {
-    name: "Investment",
-
-    requiredFields: [
-      "location",
-      "income",
-      "investmentAmount",
-      "investmentPeriod",
-      "riskPreference"
-    ]
-  },
-
-  general_financial_guidance: {
-    name: "General Financial Guidance",
-
-    requiredFields: []
+  let stage;
+  if (!hasIntent(effectiveIntent)) {
+    stage = "intent_detection";
+  } else if (conversation?.status === "completed" && isComplete) {
+    stage = "completed";
+  } else if (!isComplete || missingFields.length > 0) {
+    stage = "information_collection";
+  } else {
+    stage = "ready_for_decision";
   }
-};
 
-module.exports = intentDefinitions;
+  return {
+    stage,
+    intent: effectiveIntent,
+    language: effectiveLanguage,
+    collectedFields,
+    missingFields,
+    lastAskedField,
+    isComplete,
+  };
+}
+
+module.exports = { deriveConversationState };

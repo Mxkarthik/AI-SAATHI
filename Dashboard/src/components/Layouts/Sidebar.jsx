@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Newspaper,
   Wallet,
@@ -9,16 +9,17 @@ import {
   X,
   LogOut,
   ChevronUp,
+  Bot,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useLanguage } from "../../i18n/LanguageContext";
 
 export default function Sidebar({ isOpen = false, onClose = () => {} }) {
-  const [active, setActive] = useState("Financial News");
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef(null);
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const location = useLocation();
 
   const menuItems = [
     { name: "Financial News",       label: t("sidebar.nav", "financialNews"),       icon: Newspaper,    path: "/" },
@@ -26,6 +27,7 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
     { name: "Loan Assistant",       label: t("sidebar.nav", "loanAssistant"),       icon: Banknote,     path: "/loan-assistant" },
     { name: "Investment Assistant", label: t("sidebar.nav", "investmentAssistant"), icon: TrendingUp,   path: "/investment-assistant" },
     { name: "Community",            label: t("sidebar.nav", "community"),           icon: Users,        path: "/community" },
+    { name: "Scheme AI",            label: t("sidebar.nav", "schemeAI"),            icon: Bot,          path: "/scheme-ai" },
   ];
 
   // Close account popover when clicking outside
@@ -87,12 +89,13 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
         <div className="flex flex-col gap-2 p-4 flex-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isActive = location.pathname === item.path;
             return (
               <Link key={item.name} to={item.path}>
                 <button
-                  onClick={() => { setActive(item.name); onClose(); }}
+                  onClick={onClose}
                   className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    active === item.name
+                    isActive
                       ? "bg-gray-800 text-yellow-400"
                       : "hover:bg-gray-800 hover:text-white"
                   }`}

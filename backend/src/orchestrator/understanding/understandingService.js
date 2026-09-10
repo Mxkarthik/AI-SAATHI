@@ -131,11 +131,14 @@ function isValidProviderResponse(result) {
 /**
  * Understand a user message using the configured AI provider.
  *
- * @param {string} message — raw user message (Telugu, English, or mixed)
+ * @param {string} message   — raw user message (Telugu, English, or mixed)
+ * @param {object} [context] — optional conversation context
+ * @param {string} [context.lastAskedField]     — field the assistant just asked for
+ * @param {string} [context.conversationIntent] — established intent (if any)
  * @returns {Promise<object>} — normalised understanding result
  * @throws {Error} only for invalid input (missing / non-string message)
  */
-async function understandMessage(message) {
+async function understandMessage(message, context = {}) {
   if (!message || typeof message !== "string" || message.trim() === "") {
     throw new Error("understandMessage: message must be a non-empty string.");
   }
@@ -146,7 +149,7 @@ async function understandMessage(message) {
   // ── Attempt AI provider understanding ──────────────────────────────────
   try {
     const provider = getProvider();
-    const raw = await provider.understand(cleanMessage);
+    const raw = await provider.understand(cleanMessage, context);
 
     if (!isValidProviderResponse(raw)) {
       throw new Error(

@@ -403,17 +403,7 @@ console.log("══════════════════════�
 await test("TEST 7 setup", async () => {
   let getNextQuestionCallCount = 0;
 
-  const countingNextQuestion = {
-    getNextQuestion: async (params) => {
-      getNextQuestionCallCount++;
-      return {
-        field: params.missingFields[0],
-        question: "stub",
-        language: "en",
-        source: "fallback",
-      };
-    },
-  };
+  const proxyquire = require("proxyquire").noCallThru();
 
   const fullProfile = {
     location: { state: "Andhra Pradesh", district: "Guntur" },
@@ -423,24 +413,178 @@ await test("TEST 7 setup", async () => {
     assets:   { equipment: [], livestock: [] },
   };
 
+  // Use proxyquire for reliable stubbing — avoids require.cache timing issues
+  // caused by the direct require() in TEST 6 above.
+  const { orchestrate: orchestrate7 } = proxyquire("./orchestratorService", {
+    "./understanding/understandingService": {
+      understandMessage: async () => ({
+        language: "en",
+        intent: "crop_financing",
+        entities: { season: "kharif", amount: 50000 },
+        provider: "stub",
+      }),
+    },
+    "./questions/nextQuestionService": {
+      getNextQuestion: async (params) => {
+        getNextQuestionCallCount++;
+        return {
+          field: params.missingFields[0],
+          question: "stub",
+          language: "en",
+          source: "fallback",
+        };
+      },
+    },
+    "../services/profileService": { upsertProfile: async () => null },
+  });
+
+  const CONV_WITH_INTENT = { ...CONV_EN, intent: "crop_financing" };
+
+  const result = await orchestrate7({ conversation: CONV_WITH_INTENT, profile: fullProfile, message: "test" });
+
+  assert("T7: status = ready_for_decision",   result.status === "ready_for_decision", result.status);
+  assert("T7: nextQuestion = null",            result.nextQuestion === null);
+  assert("T7: getNextQuestion NOT called",     getNextQuestionCallCount === 0, `called ${getNextQuestionCallCount} times`);
+
+  console.log("  (getNextQuestion call count:", getNextQuestionCallCount + ")");
+});
+
+// ─── TEST 8: Bug fix — general_financial_guidance never becomes ready_for_decision ─
+
+console.log("\n═══════════════════════════════════════════════════════════");
+console.log(" TEST 8 (Phase D Bug 1): ambiguous intent must NOT produce ready_for_decision");
+console.log("═══════════════════════════════════════════════════════════\n");
+
+await test("TEST 8 setup", async () => {
+  // "I need money for farming." — understanding layer returns general_financial_guidance
+  // because the message is not specific enough for a definite intent.
+  const message = "I need money for farming.";
+
+  const result = await withStub(
+    "./understanding/understandingService",
+    understandingStub("general_financial_guidance", {}, "en"),
+    () => withStub(
+      "./questions/nextQuestionService",
+      STUB_NEXT_QUESTION,
+      async () => {
+        const { orchestrate } = require("./orchestratorService");
+        // New conversation — no prior intent
+        return orchestrate({ conversation: CONV_EN, profile: null, message });
+      }
+    )
+  );
+
+  assert("T8: status is needs_information (NOT ready_for_decision)",
+    result.status === "needs_information", result.status);
+  assert("T8: conversationState.stage is intent_detection",
+    result.conversationState && result.conversationState.stage === "intent_detection",
+    result.conversationState && result.conversationState.stage);
+  assert("T8: nextQuestion is not null (clarification question provided)",
+    result.nextQuestion !== null);
+  assert("T8: nextQuestion.field is 'intent'",
+    result.nextQuestion && result.nextQuestion.field === "intent",
+    result.nextQuestion && result.nextQuestion.field);
+  assert("T8: nextQuestion.question is a non-empty string",
+    result.nextQuestion && typeof result.nextQuestion.question === "string" && result.nextQuestion.question.length > 0);
+  assert("T8: eligibility is null (must not run for ambiguous intent)",
+    result.eligibility === null);
+  assert("T8: recommendation is null",
+    result.recommendation === null);
+
+  console.log("  (clarifying question:", result.nextQuestion?.question + ")");
+});
+
+// ─── TEST 9: Bug fix — conversationState.stage drives top-level status ──────
+
+console.log("\n═══════════════════════════════════════════════════════════");
+console.log(" TEST 9 (Phase D Bug 1): complete profile with specific intent → ready_for_decision");
+console.log("═══════════════════════════════════════════════════════════\n");
+
+await test("TEST 9 setup", async () => {
+  // Complete crop_financing profile — all fields provided
+  const message = "I am a farmer from Visakhapatnam, Andhra Pradesh. I own 3 acres and grow paddy. I need ₹50,000 for crop financing. Annual farm income is ₹2 lakh, existing bank loan ₹30,000.";
+
+  const fullProfile = {
+    location: { state: "Andhra Pradesh", district: "Visakhapatnam" },
+    farming:  { landArea: 3, landUnit: "acres", ownership: "owned" },
+    crops:    ["paddy"],
+    financial: { farmIncome: 200000, existingLoans: [{ lender: "Bank", amount: 30000 }] },
+    assets:   { equipment: [], livestock: [] },
+  };
+
   const result = await withStub(
     "./understanding/understandingService",
     understandingStub("crop_financing", { season: "kharif", amount: 50000 }, "en"),
     () => withStub(
       "./questions/nextQuestionService",
-      countingNextQuestion,
+      STUB_NEXT_QUESTION,
       async () => {
         const { orchestrate } = require("./orchestratorService");
-        return orchestrate({ conversation: CONV_EN, profile: fullProfile, message: "test" });
+        return orchestrate({ conversation: CONV_EN, profile: fullProfile, message });
       }
     )
   );
 
-  assert("T7: status = ready_for_decision",   result.status === "ready_for_decision");
-  assert("T7: nextQuestion = null",            result.nextQuestion === null);
-  assert("T7: getNextQuestion NOT called",     getNextQuestionCallCount === 0, `called ${getNextQuestionCallCount} times`);
+  assert("T9: intent = crop_financing",         result.intent === "crop_financing", result.intent);
+  assert("T9: informationGap.isComplete = true",  result.informationGap.isComplete === true);
+  assert("T9: conversationState.stage = ready_for_decision",
+    result.conversationState && result.conversationState.stage === "ready_for_decision",
+    result.conversationState && result.conversationState.stage);
+  assert("T9: status = ready_for_decision",     result.status === "ready_for_decision", result.status);
+  assert("T9: nextQuestion = null",             result.nextQuestion === null);
 
-  console.log("  (getNextQuestion call count:", getNextQuestionCallCount + ")");
+  console.log("  (status:", result.status + ", stage:", result.conversationState?.stage + ")");
+});
+
+// ─── TEST 10: Bug fix — status consistency: stage drives status in all paths ─
+
+console.log("\n═══════════════════════════════════════════════════════════");
+console.log(" TEST 10 (Phase D Bug 1): status always consistent with conversationState.stage");
+console.log("═══════════════════════════════════════════════════════════\n");
+
+await test("TEST 10 setup", async () => {
+  // information_collection stage: specific intent but incomplete profile
+  const result = await withStub(
+    "./understanding/understandingService",
+    understandingStub("crop_financing", {}, "en"),
+    () => withStub(
+      "./questions/nextQuestionService",
+      STUB_NEXT_QUESTION,
+      async () => {
+        const { orchestrate } = require("./orchestratorService");
+        return orchestrate({ conversation: CONV_EN, profile: null, message: "I need a crop loan" });
+      }
+    )
+  );
+
+  assert("T10: stage = information_collection when missing fields remain",
+    result.conversationState && result.conversationState.stage === "information_collection",
+    result.conversationState && result.conversationState.stage);
+  assert("T10: status = needs_information when stage = information_collection",
+    result.status === "needs_information", result.status);
+
+  // intent_detection stage: ambiguous intent, no prior intent on conversation
+  const result2 = await withStub(
+    "./understanding/understandingService",
+    understandingStub("general_financial_guidance", {}, "en"),
+    () => withStub(
+      "./questions/nextQuestionService",
+      STUB_NEXT_QUESTION,
+      async () => {
+        const { orchestrate } = require("./orchestratorService");
+        return orchestrate({ conversation: CONV_EN, profile: null, message: "I need money" });
+      }
+    )
+  );
+
+  assert("T10: stage = intent_detection when intent is ambiguous",
+    result2.conversationState && result2.conversationState.stage === "intent_detection",
+    result2.conversationState && result2.conversationState.stage);
+  assert("T10: status = needs_information when stage = intent_detection (NOT ready_for_decision)",
+    result2.status === "needs_information", result2.status);
+  assert("T10: status is NEVER ready_for_decision when stage is intent_detection",
+    !(result2.status === "ready_for_decision"),
+    result2.status);
 });
 
 // ─── Summary ──────────────────────────────────────────────────────────────────

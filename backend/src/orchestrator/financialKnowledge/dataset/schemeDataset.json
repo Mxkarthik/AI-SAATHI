@@ -1,0 +1,1618 @@
+{
+  "datasetName": "AI-SAATHI Government Scheme Ground-Truth Dataset",
+  "version": "2026-09-09-expanded-verified",
+  "lastVerified": "2026-09-09",
+  "recordCount": 15,
+  "verificationPolicy": {
+    "productionRule": "Only facts traced to official Government sources are included.",
+    "sourceHierarchy": [
+      "official Ministry/Department portal",
+      "official operational guidelines/notifications",
+      "official PIB releases/FAQs",
+      "official State/UT portals for State-specific rules"
+    ],
+    "fallback": "If a required fact is missing, conflicting, outdated or State-specific but unverified, return INSUFFICIENT_VERIFIED_DATA.",
+    "urlPolicy": "Official URLs only; no manually invented application URLs.",
+    "fieldRule": "Every field must be supported by an official source or explicitly marked as State-dependent/not universally fixed. Unknown facts are not inferred.",
+    "currentDataWarning": "Dynamic values such as deadlines, State notifications, fund releases, beneficiary lists and local procedures must be rechecked before a citizen-specific answer."
+  },
+  "categories": {
+    "farmers": [
+      "pm_kisan",
+      "pmfby",
+      "kisan_credit_card",
+      "enam",
+      "agriculture_infrastructure_fund"
+    ],
+    "rural_women": [
+      "day_nrlm",
+      "pm_ujjwala_yojana",
+      "pmmy",
+      "pmmvy",
+      "ddu_gky"
+    ],
+    "general_rural_households": [
+      "vb_g_ram_g",
+      "pmay_g",
+      "jal_jeevan_mission_2_0",
+      "pmjdy",
+      "nsap"
+    ]
+  },
+  "schemes": [
+    {
+      "id": "pm_kisan",
+      "name": "Pradhan Mantri Kisan Samman Nidhi",
+      "shortName": "PM-KISAN",
+      "authority": "Department of Agriculture & Farmers Welfare",
+      "level": "central",
+      "category": "agriculture_income_support",
+      "purpose": "Income support for eligible landholding farmer families.",
+      "targetBeneficiary": "Landholding farmer families with cultivable land recorded in the relevant State/UT land records.",
+      "benefit": {
+        "amountPerYear": 6000,
+        "installmentsPerYear": 3,
+        "amountPerInstallment": 2000,
+        "mode": "Direct Benefit Transfer"
+      },
+      "eligibility": {
+        "landholdingRequired": true,
+        "farmerFamily": {
+          "definition": [
+            "husband",
+            "wife",
+            "minor_children"
+          ]
+        },
+        "land": {
+          "cultivableLandRequired": true,
+          "ownershipRecordRequired": true
+        },
+        "identification": "State/UT Government identifies eligible farmer families according to scheme guidelines.",
+        "exclusions": [
+          "institutional_land_holder",
+          "constitutional_post_holder",
+          "specified_elected_public_office_holders",
+          "serving_or_retired_specified_government_employees",
+          "specified_pensioners",
+          "income_tax_payer",
+          "specified_professionals"
+        ]
+      },
+      "documents": [
+        "land/land-record details as required by State/UT",
+        "Aadhaar or approved identity details",
+        "bank-account details",
+        "mobile number where required"
+      ],
+      "verification": {
+        "eKYCRequired": true,
+        "statusCheckAvailable": true
+      },
+      "identificationData": {
+        "stateDatabaseFields": [
+          "name",
+          "age",
+          "gender",
+          "category",
+          "aadhaar",
+          "bank_account",
+          "ifsc",
+          "land_record_details"
+        ]
+      },
+      "application": {
+        "authority": "State/UT Government identification and PM-KISAN system",
+        "portal": "PM-KISAN official portal",
+        "modes": [
+          "new farmer registration",
+          "State/UT identification",
+          "CSC/assisted channels where available"
+        ],
+        "status": "PM-KISAN Know Your Status"
+      },
+      "deadlines": "No single national application deadline; identification/registration and verification are governed by the PM-KISAN system and State/UT processes.",
+      "grievance": "Use the PM-KISAN official grievance/contact mechanisms and State/UT nodal authorities.",
+      "stateVariation": "Land-record identification and verification are State/UT administered.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "Do not recommend solely from self-declared land ownership; State/UT records and verification matter.",
+        "Do not treat ₹6,000 as a loan.",
+        "Do not infer eligibility for excluded categories.",
+        "eKYC is mandatory for registered farmers."
+      ],
+      "source": {
+        "authority": "Department of Agriculture & Farmers Welfare",
+        "officialPortal": "https://pmkisan.gov.in/",
+        "operationalGuidelines": "Revised PM-KISAN Operational Guidelines",
+        "secondaryOfficialSource": "https://pmkisan.gov.in/",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "State/UT identifies eligible landholding farmer families",
+        "Eligibility and records are validated",
+        "eKYC is completed",
+        "₹2,000 is transferred in each of three instalments through DBT"
+      ],
+      "applicationSteps": [
+        "Use New Farmer Registration on the official PM-KISAN portal or the authorized assisted channel",
+        "Enter/submit required farmer, land and bank information",
+        "Complete eKYC",
+        "Use Know Your Status to check verification/payment status"
+      ],
+      "paymentOrDelivery": "₹6,000 per year in three equal ₹2,000 instalments by DBT.",
+      "notGuaranteed": [
+        "Registration alone does not guarantee payment; eligibility and State/UT verification apply."
+      ],
+      "fraudWarnings": [
+        "Do not pay unofficial agents for guaranteed approval.",
+        "Use only the official PM-KISAN portal/authorized channels.",
+        "Never share OTP/PIN/password with callers claiming to be PM-KISAN officials."
+      ],
+      "sourceToFactMap": {
+        "benefit": "Official PM-KISAN portal",
+        "familyDefinition": "Official PM-KISAN portal and revised guidelines",
+        "exclusions": "Official PM-KISAN portal and scheme guidelines",
+        "eKYC": "Official PM-KISAN portal",
+        "currentStatus": "Official PM-KISAN portal"
+      }
+    },
+    {
+      "id": "pmfby",
+      "name": "Pradhan Mantri Fasal Bima Yojana",
+      "shortName": "PMFBY",
+      "authority": "Department of Agriculture & Farmers Welfare",
+      "level": "central",
+      "category": "crop_insurance",
+      "purpose": "Crop insurance protection against notified crop losses and specified risks in notified areas and seasons.",
+      "targetBeneficiary": "Farmers, including eligible sharecroppers and tenant farmers, growing notified crops in notified areas and having insurable interest.",
+      "benefit": {
+        "type": "crop_insurance",
+        "farmerPremiumCap": {
+          "kharif_foodgrain_oilseeds": "2% of sum insured or actuarial rate, whichever is less",
+          "rabi_foodgrain_oilseeds": "1.5% of sum insured or actuarial rate, whichever is less",
+          "annual_commercial_horticultural": "5% of sum insured or actuarial rate, whichever is less"
+        },
+        "claimMode": "insurance claim subject to scheme conditions and loss assessment"
+      },
+      "eligibility": {
+        "notifiedCropRequired": true,
+        "notifiedAreaRequired": true,
+        "insurableInterestRequired": true,
+        "tenantAndSharecropperCoverage": "Eligible where State notification/documentation permits."
+      },
+      "coverage": "Coverage and risks depend on notified crop, area, season and applicable State notification; do not assume every crop or loss is covered.",
+      "documents": [
+        "land records/Record of Rights or applicable land possession evidence for non-loanee farmers",
+        "applicable tenant/sharecropper agreement or State-permitted evidence",
+        "bank account details",
+        "Aadhaar/identity details",
+        "premium payment details"
+      ],
+      "verification": {
+        "policyStatusAvailable": true,
+        "premiumCalculatorAvailable": true,
+        "lossReportingAvailable": true
+      },
+      "identificationData": {
+        "fields": [
+          "farmer_name",
+          "crop",
+          "season",
+          "notified_area",
+          "insured_area",
+          "sum_insured",
+          "policy_id",
+          "bank_account",
+          "state",
+          "district"
+        ]
+      },
+      "application": {
+        "authority": "PMFBY implementing channels notified by State/UT",
+        "portal": "PMFBY official portal",
+        "modes": [
+          "online farmer application",
+          "bank/PACS/CSC/authorised enrolment channels"
+        ],
+        "officialApplicationUrl": "https://pmfby.gov.in/farmerApplicationForm"
+      },
+      "deadlines": "State/crop/season-specific; always check the current notified crop calendar and State/UT notification.",
+      "lossReporting": "For specified individual post-harvest losses under the operational guidelines, immediate intimation within 72 hours applies; current applicable procedure must be followed.",
+      "grievance": "Krishi Rakshak Portal & Helpline (KRPH), 14447.",
+      "stateVariation": "State/UT notifications determine notified crops, areas, seasons, enrolment timelines and implementing arrangements.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "Never state a fixed enrolment deadline without State + crop + season.",
+        "Never promise a claim amount.",
+        "Do not assume all natural disasters/losses are covered.",
+        "Use current PMFBY portal and applicable notification for loss reporting."
+      ],
+      "source": {
+        "authority": "Department of Agriculture & Farmers Welfare",
+        "officialPortal": "https://pmfby.gov.in/",
+        "operationalGuidelines": "2023/Revamped PMFBY Operational Guidelines",
+        "secondaryOfficialSource": "https://pmfby.gov.in/guidelines",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "State/UT notifies crops, areas and seasons",
+        "Eligible farmer enrolls through the notified channel",
+        "Farmer pays applicable capped premium",
+        "Insurer provides cover for notified risks",
+        "Loss is assessed under the applicable mechanism and eligible claim is paid"
+      ],
+      "applicationSteps": [
+        "Check State/UT notification for crop, area and season",
+        "Check enrolment deadline",
+        "Apply through the notified bank/PACS/CSC/authorized channel or official portal where available",
+        "Keep policy/enrolment number and bank details",
+        "For applicable localized/post-harvest losses, report within the prescribed time"
+      ],
+      "paymentOrDelivery": "Insurance claim payment is subject to the notified crop, insured area/sum insured, covered peril, loss assessment and applicable guidelines.",
+      "notGuaranteed": [
+        "Insurance does not guarantee payment for every crop loss.",
+        "Coverage, enrolment deadline and claim methodology are notification-specific."
+      ],
+      "fraudWarnings": [
+        "Do not pay anyone promising a guaranteed claim.",
+        "Do not miss the prescribed loss-intimation window.",
+        "Verify policy/enrolment details on the official PMFBY system."
+      ],
+      "sourceToFactMap": {
+        "premiumCaps": "2023 PMFBY Operational Guidelines / official PMFBY portal",
+        "lossReporting": "PMFBY Operational Guidelines",
+        "currentGuidelines": "PMFBY official guidelines page"
+      }
+    },
+    {
+      "id": "kisan_credit_card",
+      "name": "Kisan Credit Card",
+      "shortName": "KCC",
+      "authority": "Department of Financial Services / Government of India",
+      "level": "central",
+      "category": "agricultural_credit",
+      "purpose": "Timely and affordable institutional credit for agriculture and eligible allied activities.",
+      "targetBeneficiary": "Eligible farmers including owner cultivators, small and marginal farmers, tenant farmers, sharecroppers, SHGs/JLGs of farmers and eligible allied-activity borrowers.",
+      "benefit": {
+        "creditLimitFramework": {
+          "missKccLoanLimit": "up to ₹5 lakh, subject to applicable rules and lender assessment",
+          "collateralFreeLimit": "up to ₹2 lakh per borrower"
+        },
+        "shortTermAgriLoanRate": "7% for eligible short-term agri-loans up to ₹3 lakh under MISS",
+        "timelyRepaymentBenefit": "additional 3% subvention for eligible timely repayment, making effective rate 4% for that component"
+      },
+      "eligibility": {
+        "farmerOrEligibleAlliedActivityRequired": true,
+        "lenderAssessmentRequired": true,
+        "tenantSharecropperCoverage": "covered subject to applicable bank/documentation rules",
+        "shgJlgCoverage": true
+      },
+      "documents": [
+        "identity/KYC documents",
+        "land or cultivation/lease/tenancy evidence as applicable",
+        "bank-required application documents",
+        "crop/allied activity details",
+        "other documents required by lending institution"
+      ],
+      "verification": {
+        "creditSanctionSubjectToLenderAssessment": true,
+        "collateralFreeLimitIsNotAutomatic": true
+      },
+      "identificationData": {
+        "fields": [
+          "applicant_name",
+          "farmer_type",
+          "land_or_tenancy_details",
+          "crop_or_allied_activity",
+          "bank_account",
+          "loan_limit",
+          "sanction_status"
+        ]
+      },
+      "application": {
+        "authority": "Participating bank/lending institution",
+        "portal": "Participating bank/KCC/e-KCC channels",
+        "modes": [
+          "bank branch",
+          "eligible digital/e-KCC channel",
+          "CSC-assisted channel where available"
+        ]
+      },
+      "deadlines": "No universal national application deadline; lender and seasonal crop-credit timelines may apply.",
+      "grievance": "Use the concerned lending institution's grievance mechanism and applicable banking grievance channels.",
+      "stateVariation": "Lending operations, documentation and local implementation can vary by bank and State.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "₹5 lakh is a current framework/limit, not an automatic sanction.",
+        "Do not promise a loan or interest rate outside applicable MISS rules.",
+        "Collateral-free does not mean every KCC borrower is automatically eligible for ₹2 lakh."
+      ],
+      "source": {
+        "authority": "Department of Financial Services / Government of India",
+        "officialPortal": "https://financialservices.gov.in/",
+        "operationalGuidelines": "Government of India PIB KCC backgrounder",
+        "secondaryOfficialSource": "https://www.pib.gov.in/PressNoteDetails.aspx?ModuleId=3&NoteId=157771&lang=1&reg=3",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Eligible farmer approaches participating lender",
+        "Bank assesses crop/allied activity, land/tenancy and repayment capacity",
+        "KCC limit is sanctioned according to applicable framework",
+        "Eligible short-term crop loans may receive MISS interest support"
+      ],
+      "applicationSteps": [
+        "Approach participating bank/KCC channel",
+        "Submit KYC and cultivation/allied-activity documents",
+        "Bank assesses eligibility and limit",
+        "Complete sanction and KCC/account formalities"
+      ],
+      "paymentOrDelivery": "Credit facility, not a cash grant. Current MISS/KCC framework permits limits up to ₹5 lakh subject to rules and lender assessment.",
+      "notGuaranteed": [
+        "₹5 lakh is not an automatic sanction.",
+        "Collateral-free treatment up to ₹2 lakh is subject to applicable rules; it does not mean every applicant receives ₹2 lakh."
+      ],
+      "fraudWarnings": [
+        "Never pay an unofficial person for guaranteed KCC approval.",
+        "Verify interest/subvention terms with the lending institution."
+      ],
+      "sourceToFactMap": {
+        "fiveLakhLimit": "PIB KCC backgrounder dated 11 Mar 2026",
+        "twoLakhCollateralFree": "PIB KCC backgrounder dated 11 Mar 2026",
+        "interestSubvention": "PIB KCC backgrounder dated 11 Mar 2026"
+      }
+    },
+    {
+      "id": "enam",
+      "name": "National Agriculture Market",
+      "shortName": "e-NAM",
+      "authority": "Ministry of Agriculture & Farmers Welfare",
+      "level": "central",
+      "category": "agricultural_market",
+      "purpose": "Electronic agricultural market platform supporting transparent price discovery and access to buyers and markets.",
+      "targetBeneficiary": "Farmers/sellers using participating e-NAM mandis and eligible agricultural markets.",
+      "benefit": {
+        "registrationFee": 0,
+        "services": [
+          "transparent trade",
+          "price discovery",
+          "access to more markets and buyers",
+          "real-time price/arrival information",
+          "e-payments"
+        ]
+      },
+      "eligibility": {
+        "participatingMandiRequired": true,
+        "eligibleProduceAndMarketRulesApply": true
+      },
+      "documents": [
+        "name",
+        "sex",
+        "address",
+        "date_of_birth",
+        "mobile_number",
+        "bank_details",
+        "passbook_or_cheque_leaf",
+        "government_identity_proof"
+      ],
+      "verification": {
+        "registrationRequired": true
+      },
+      "identificationData": {
+        "fields": [
+          "name",
+          "sex",
+          "address",
+          "dob",
+          "mobile",
+          "bank_details",
+          "identity_document"
+        ]
+      },
+      "application": {
+        "authority": "e-NAM/participating mandi",
+        "portal": "https://www.enam.gov.in/",
+        "modes": [
+          "e-NAM portal",
+          "mobile application",
+          "mandi gate registration"
+        ]
+      },
+      "deadlines": "No universal national deadline; transaction and market participation depend on the participating mandi and commodity/market rules.",
+      "grievance": "Use e-NAM portal support/participating mandi mechanisms.",
+      "stateVariation": "Mandi participation, commodities and local market procedures vary by State/UT and participating market.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "e-NAM facilitates transparent bidding and market access; it does not guarantee a higher sale price.",
+        "Do not promise immediate sale time; transaction duration depends on mandi arrivals and season."
+      ],
+      "source": {
+        "authority": "Ministry of Agriculture & Farmers Welfare",
+        "officialPortal": "https://www.enam.gov.in/",
+        "operationalGuidelines": "Official e-NAM farmer guidance",
+        "secondaryOfficialSource": "https://www.enam.gov.in/web/stakeholders-Involved/farmers",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Farmer registers with e-NAM/participating APMC",
+        "KYC is completed",
+        "Produce is brought to participating mandi",
+        "Quality assaying and transparent electronic bidding can be used",
+        "Payment can be made electronically to the seller's bank account"
+      ],
+      "applicationSteps": [
+        "Visit/register through e-NAM",
+        "Select participating APMC",
+        "Provide mandatory details and documents",
+        "Complete APMC KYC/approval",
+        "Use dashboard/mobile services for market information and transactions"
+      ],
+      "paymentOrDelivery": "e-NAM facilitates electronic payment through methods such as RTGS, NEFT and BHIM UPI; actual sale price and transaction time depend on market conditions.",
+      "notGuaranteed": [
+        "e-NAM does not guarantee a specific sale price or instant sale."
+      ],
+      "fraudWarnings": [
+        "Use the official e-NAM portal and participating mandi.",
+        "Do not pay unofficial registration fees; official farmer registration is free."
+      ],
+      "sourceToFactMap": {
+        "registrationFee": "Official e-NAM farmer page",
+        "documents": "Official e-NAM farmer page",
+        "benefits": "Official e-NAM farmer page",
+        "registrationProcess": "Official e-NAM registration guidelines"
+      }
+    },
+    {
+      "id": "agriculture_infrastructure_fund",
+      "name": "Agriculture Infrastructure Fund",
+      "shortName": "AIF",
+      "authority": "Department of Agriculture & Farmers Welfare",
+      "level": "central",
+      "category": "agri_infrastructure_finance",
+      "purpose": "Medium- and long-term debt financing for post-harvest management infrastructure and community farming assets.",
+      "targetBeneficiary": "Eligible farmers, FPOs, SHGs, JLGs, PACS/cooperatives and other approved agri-infrastructure beneficiaries.",
+      "benefit": {
+        "interestSubvention": "3% per annum",
+        "creditGuarantee": "supported for eligible loans up to ₹2 crore",
+        "benefitType": "interest-subvented credit, not a ₹2 crore cash grant"
+      },
+      "eligibility": {
+        "approvedProjectRequired": true,
+        "eligibleAssetRequired": true,
+        "lenderAppraisalRequired": true
+      },
+      "documents": [
+        "beneficiary KYC",
+        "project/business plan",
+        "land/asset/project documents as applicable",
+        "bank-required credit documents",
+        "entity registration documents where applicable"
+      ],
+      "verification": {
+        "projectAndLenderApprovalRequired": true
+      },
+      "identificationData": {
+        "fields": [
+          "beneficiary_type",
+          "project_type",
+          "project_location",
+          "loan_amount",
+          "lender",
+          "sanction_status",
+          "asset_category"
+        ]
+      },
+      "application": {
+        "authority": "Eligible lending institution through AIF system",
+        "portal": "AIF official Government system",
+        "modes": [
+          "eligible lending institution",
+          "AIF digital application workflow"
+        ]
+      },
+      "deadlines": "Facility/project timelines are governed by current AIF guidelines and lending arrangements.",
+      "grievance": "Use lending institution and AIF/implementing authority grievance channels.",
+      "stateVariation": "Project facilitation and local convergence can vary by State/UT.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "AIF is financing support, not a universal cash grant.",
+        "₹2 crore refers to eligible credit/guarantee framework, not guaranteed money to every applicant.",
+        "Final sanction depends on project eligibility and lender appraisal."
+      ],
+      "source": {
+        "authority": "Department of Agriculture & Farmers Welfare",
+        "officialPortal": "https://agriinfra.dac.gov.in/",
+        "operationalGuidelines": "PIB AIF current update",
+        "secondaryOfficialSource": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2222807&lang=1&noshow=1&reg=3",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Eligible beneficiary prepares an eligible infrastructure project",
+        "Project is appraised by an eligible lender",
+        "Loan is sanctioned subject to lender/project conditions",
+        "Government interest subvention applies to eligible loans",
+        "Credit guarantee support applies where eligible"
+      ],
+      "applicationSteps": [
+        "Identify eligible post-harvest/community-farming asset",
+        "Prepare project proposal and required documents",
+        "Apply through eligible lending institution/AIF workflow",
+        "Complete lender appraisal and sanction",
+        "Implement project and meet loan conditions"
+      ],
+      "paymentOrDelivery": "Interest-subvented credit; AIF is not a universal direct cash grant.",
+      "notGuaranteed": [
+        "₹2 crore is an eligible credit/guarantee framework, not guaranteed funding to every applicant.",
+        "Final loan terms are lender/project dependent."
+      ],
+      "fraudWarnings": [
+        "Do not pay anyone for guaranteed AIF sanction.",
+        "Verify the lender and project eligibility through official channels."
+      ],
+      "sourceToFactMap": {
+        "threePercent": "PIB AIF update 03 Feb 2026",
+        "twoCroreGuarantee": "PIB AIF update 03 Feb 2026",
+        "schemePurpose": "PIB AIF update 03 Feb 2026"
+      }
+    },
+    {
+      "id": "day_nrlm",
+      "name": "Deendayal Antyodaya Yojana – National Rural Livelihoods Mission",
+      "shortName": "DAY-NRLM",
+      "authority": "Ministry of Rural Development",
+      "level": "central",
+      "category": "rural_women_livelihoods",
+      "purpose": "Social, economic and institutional empowerment of rural poor households through women-led Self Help Groups, financial inclusion and livelihoods.",
+      "targetBeneficiary": "Rural poor households, with strong focus on mobilising rural women into Self Help Groups and federations.",
+      "benefit": {
+        "type": "livelihood_ecosystem",
+        "components": [
+          "SHG formation",
+          "financial literacy",
+          "institutional credit linkage",
+          "micro-enterprise support",
+          "livelihood promotion",
+          "community institutions"
+        ]
+      },
+      "eligibility": {
+        "ruralPoorHouseholdFocus": true,
+        "shgParticipationAndLocalMissionRulesApply": true
+      },
+      "documents": [
+        "identity/KYC as required for SHG and bank linkage",
+        "bank account details",
+        "SHG/member records",
+        "local mission-required documents"
+      ],
+      "verification": {
+        "localSelfHelpGroupAndMissionVerification": true
+      },
+      "identificationData": {
+        "fields": [
+          "household_details",
+          "member_details",
+          "shg_id",
+          "bank_linkage",
+          "livelihood_activity",
+          "enterprise_details"
+        ]
+      },
+      "application": {
+        "authority": "State Rural Livelihood Mission / district/block implementation structure",
+        "portal": "DAY-NRLM official government systems",
+        "modes": [
+          "SHG/community institution",
+          "local mission functionaries",
+          "bank linkage"
+        ]
+      },
+      "deadlines": "No single universal citizen application deadline; mobilisation and programme components operate through State missions.",
+      "grievance": "State Rural Livelihood Mission / district/block mission grievance mechanisms.",
+      "stateVariation": "Implementation, SHG structures, livelihood components and local support vary by State/UT.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "DAY-NRLM is not a universal fixed cash-payment scheme.",
+        "Do not promise a fixed grant to every woman.",
+        "Eligibility and benefits depend on SHG/community institution and State implementation."
+      ],
+      "source": {
+        "authority": "Ministry of Rural Development",
+        "officialPortal": "https://nrlm.gov.in/",
+        "operationalGuidelines": "PIB DAY-NRLM current update",
+        "secondaryOfficialSource": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2288996&lang=1&reg=1",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Rural poor households are mobilized into women-led SHGs",
+        "SHGs are nurtured into sustainable community institutions",
+        "Members receive financial literacy and bank/credit linkage",
+        "Livelihood and enterprise activities are promoted",
+        "Higher-level federations and market linkages support scale"
+      ],
+      "applicationSteps": [
+        "Contact the local SHG/community resource person or State Rural Livelihood Mission",
+        "Join/form an eligible SHG through the local mission structure",
+        "Complete SHG records and bank linkage as applicable",
+        "Access relevant livelihood/credit/enterprise components"
+      ],
+      "paymentOrDelivery": "Benefits are delivered through SHGs/community institutions, financial linkage, livelihood support and enterprise ecosystems rather than a single universal cash payment.",
+      "notGuaranteed": [
+        "DAY-NRLM does not provide one fixed cash amount to every rural woman."
+      ],
+      "fraudWarnings": [
+        "Do not pay unofficial agents for SHG membership or guaranteed credit.",
+        "Verify SHG/loan terms with the SHG, bank and State Rural Livelihood Mission."
+      ],
+      "sourceToFactMap": {
+        "womenAndSHGs": "PIB current DAY-NRLM updates",
+        "fourCoreComponents": "PIB DAY-NRLM official release",
+        "financialLiteracy": "PIB DAY-NRLM official release"
+      }
+    },
+    {
+      "id": "pm_ujjwala_yojana",
+      "name": "Pradhan Mantri Ujjwala Yojana",
+      "shortName": "PMUY",
+      "authority": "Ministry of Petroleum & Natural Gas",
+      "level": "central",
+      "category": "clean_cooking",
+      "purpose": "Provide clean LPG cooking access to eligible women from poor households.",
+      "targetBeneficiary": "Adult women from eligible poor households without another LPG connection in the household.",
+      "benefit": {
+        "connection": "deposit-free LPG connection",
+        "includedBenefits": [
+          "first LPG refill free",
+          "stove/hotplate free",
+          "eligible connection components covered under current PMUY provisions"
+        ],
+        "mode": "OMC-provided connection support"
+      },
+      "eligibility": {
+        "womanAgeMinimum": 18,
+        "noExistingHouseholdLpgConnection": true,
+        "poorHouseholdDeclarationRequired": true,
+        "applicantMustBeWoman": true
+      },
+      "documents": [
+        "KYC form",
+        "ration card/family composition document or permitted self-declaration for migrants",
+        "Aadhaar of beneficiary and adult family members as applicable",
+        "address proof where required",
+        "bank account/passbook/cancelled cheque",
+        "deprivation declaration"
+      ],
+      "verification": {
+        "householdLpgDuplicationCheck": true,
+        "aadhaarAuthenticationAvailable": true
+      },
+      "identificationData": {
+        "fields": [
+          "beneficiary_name",
+          "aadhaar",
+          "family_composition",
+          "address",
+          "bank_account",
+          "ifsc",
+          "lpg_distributor",
+          "connection_status"
+        ]
+      },
+      "application": {
+        "authority": "Oil Marketing Company LPG distributor / PMUY",
+        "portal": "https://pmuy.gov.in/",
+        "modes": [
+          "online PMUY application",
+          "nearest LPG distributor",
+          "CSC assistance"
+        ],
+        "helplines": [
+          "1906",
+          "14428",
+          "14438"
+        ]
+      },
+      "deadlines": "Connection release depends on current PMUY allocation/extension and distributor processing; no single citizen-wide annual deadline.",
+      "grievance": "PMUY helplines 14428/14438; LPG emergency 1906; OMC/MoPNG grievance channels.",
+      "stateVariation": "State-specific documentation and any applicable stamp fee can vary; eligibility is governed by current PMUY rules.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "Do not claim every LPG refill is free.",
+        "Current official PMUY portal explicitly provides first refill and stove free with the deposit-free connection.",
+        "Do not invent a current refill subsidy amount unless a current official order confirms it."
+      ],
+      "source": {
+        "authority": "Ministry of Petroleum & Natural Gas",
+        "officialPortal": "https://pmuy.gov.in/",
+        "operationalGuidelines": "PMUY current FAQ/benefits",
+        "secondaryOfficialSource": "https://www.pmuy.gov.in/faq.html",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Eligible woman submits PMUY application/KYC",
+        "Household duplication and eligibility are checked",
+        "OMC releases deposit-free connection under current provisions",
+        "First refill and stove are provided free as specified by current PMUY portal"
+      ],
+      "applicationSteps": [
+        "Find nearest LPG distributor on PMUY portal",
+        "Complete KYC/application",
+        "Submit identity, address, family-composition, bank and deprivation documents as applicable",
+        "Complete distributor verification",
+        "Receive connection and first refill/stove under current PMUY benefits"
+      ],
+      "paymentOrDelivery": "Deposit-free LPG connection; current official PMUY portal says Government cash assistance covers specified connection components and OMCs provide the first refill and stove free.",
+      "notGuaranteed": [
+        "Future refill prices/subsidies are not the same as the initial PMUY connection benefit and must be checked separately."
+      ],
+      "fraudWarnings": [
+        "Do not share OTP/bank PIN with fake LPG agents.",
+        "Use PMUY/OMC helplines and official distributor locator."
+      ],
+      "sourceToFactMap": {
+        "eligibility": "Current PMUY official portal",
+        "documents": "Current PMUY official portal",
+        "connectionAssistance": "Current PMUY official portal",
+        "firstRefillAndStove": "Current PMUY official portal"
+      }
+    },
+    {
+      "id": "pmmy",
+      "name": "Pradhan Mantri MUDRA Yojana",
+      "shortName": "PMMY / MUDRA",
+      "authority": "Department of Financial Services, Ministry of Finance",
+      "level": "central",
+      "category": "microenterprise_credit",
+      "purpose": "Provide institutional collateral-free credit to micro enterprises.",
+      "targetBeneficiary": "Eligible micro and small business entrepreneurs, including non-agricultural activities and specified activities allied to agriculture such as poultry, dairy and beekeeping.",
+      "benefit": {
+        "loanCategories": {
+          "shishu": "up to ₹50,000",
+          "kishore": "above ₹50,000 and up to ₹5 lakh",
+          "tarun": "above ₹5 lakh and up to ₹10 lakh",
+          "tarun_plus": "above ₹10 lakh and up to ₹20 lakh for eligible entrepreneurs who previously availed and successfully repaid Tarun loans from 24.10.2024"
+        },
+        "collateralRequired": false,
+        "uses": [
+          "term loan",
+          "working capital"
+        ]
+      },
+      "eligibility": {
+        "microEnterprisePurposeRequired": true,
+        "lenderAssessmentRequired": true,
+        "tarunPlusPriorTarunRepaymentRequired": true
+      },
+      "documents": [
+        "KYC/identity documents",
+        "business/activity details",
+        "bank-required financial/project documents",
+        "category/entity documents where applicable"
+      ],
+      "verification": {
+        "sanctionSubjectToLenderAssessment": true
+      },
+      "identificationData": {
+        "fields": [
+          "applicant_name",
+          "business_name",
+          "business_type",
+          "loan_category",
+          "loan_amount",
+          "lender",
+          "sanction_status"
+        ]
+      },
+      "application": {
+        "authority": "Member Lending Institutions",
+        "portal": "Department of Financial Services PMMY information",
+        "modes": [
+          "public sector banks",
+          "private banks",
+          "foreign banks",
+          "RRBs",
+          "SFBs",
+          "NBFCs",
+          "MFIs",
+          "NBFC-MFIs"
+        ]
+      },
+      "deadlines": "No universal national application deadline; lending institution processing rules apply.",
+      "grievance": "Use the concerned lending institution's grievance mechanism.",
+      "stateVariation": "Lending products, interest rates, documentation and processing can vary by lender.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "PMMY is a loan, not a grant.",
+        "Loan category does not guarantee sanction.",
+        "Interest rate, repayment period and final terms depend on the lending institution and applicable rules."
+      ],
+      "source": {
+        "authority": "Department of Financial Services, Ministry of Finance",
+        "officialPortal": "https://financialservices.gov.in/pradhan-mantri-mudra-yojana-pmmy",
+        "operationalGuidelines": "PMMY official scheme page",
+        "secondaryOfficialSource": "https://financialservices.gov.in/pradhan-mantri-mudra-yojana-pmmy",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Applicant approaches a member lending institution",
+        "Lender assesses microenterprise purpose and repayment capacity",
+        "Loan category is determined by amount and applicable PMMY rules",
+        "Eligible collateral-free credit is sanctioned/disbursed by lender"
+      ],
+      "applicationSteps": [
+        "Identify business purpose and required finance",
+        "Approach an eligible MLI",
+        "Submit KYC and business/project information",
+        "Complete lender appraisal",
+        "Receive sanction/disbursement if approved"
+      ],
+      "paymentOrDelivery": "Loan/credit, not a grant. Shishu, Kishore, Tarun and Tarun Plus categories have different limits.",
+      "notGuaranteed": [
+        "No PMMY category guarantees approval, interest rate or a particular repayment period."
+      ],
+      "fraudWarnings": [
+        "Do not pay an agent for guaranteed MUDRA approval.",
+        "Confirm lender is an eligible MLI."
+      ],
+      "sourceToFactMap": {
+        "categories": "Department of Financial Services PMMY page last updated 05 Feb 2026",
+        "collateralFree": "Department of Financial Services PMMY page",
+        "memberLendingInstitutions": "Department of Financial Services PMMY page"
+      }
+    },
+    {
+      "id": "pmmvy",
+      "name": "Pradhan Mantri Matru Vandana Yojana",
+      "shortName": "PMMVY",
+      "authority": "Ministry of Women & Child Development",
+      "level": "central",
+      "category": "maternity_benefit",
+      "purpose": "Provide maternity cash support for eligible women to compensate partly for wage loss and encourage health-seeking behaviour.",
+      "targetBeneficiary": "Eligible pregnant and lactating women belonging to specified socially/economically disadvantaged categories.",
+      "benefit": {
+        "firstChild": {
+          "amount": 5000,
+          "installments": 2,
+          "breakup": [
+            3000,
+            2000
+          ]
+        },
+        "secondChildIfGirl": {
+          "amount": 6000,
+          "installments": 1
+        },
+        "mode": "Direct Benefit Transfer to bank/post-office account"
+      },
+      "eligibility": {
+        "ageAtChildbirth": {
+          "minimum": "18 years 7 months",
+          "maximum": "less than 55 years"
+        },
+        "eligibleCategories": [
+          "SC women",
+          "ST women",
+          "women with 40% or more disability",
+          "BPL ration-card holders",
+          "PMJAY beneficiaries",
+          "e-Shram card holders",
+          "women farmers receiving PM-KISAN",
+          "MGNREGA Job Card holders",
+          "net family income below ₹8 lakh/year",
+          "pregnant/lactating AWW/AWH/ASHA",
+          "NFSA ration-card holders",
+          "other categories prescribed by Central Government"
+        ],
+        "aadhaarRequired": true
+      },
+      "conditions": {
+        "firstChild": [
+          "pregnancy registration and required ANC milestones",
+          "birth registration",
+          "child's first cycle of universal immunization up to 14 weeks"
+        ],
+        "secondGirlChild": [
+          "pregnancy registration and required ANC milestones",
+          "birth registration",
+          "child's first cycle of universal immunization up to 14 weeks"
+        ]
+      },
+      "documents": [
+        "Aadhaar",
+        "Aadhaar-mapped bank/post-office account details",
+        "mobile number",
+        "eligibility proof",
+        "MCP/RCHI card",
+        "LMP and ANC details",
+        "child birth certificate",
+        "child immunization details"
+      ],
+      "verification": {
+        "mobileNumberRequired": true,
+        "aadhaarBasedPaymentChecks": true
+      },
+      "identificationData": {
+        "fields": [
+          "beneficiary_name",
+          "aadhaar",
+          "mobile",
+          "bank_or_post_account",
+          "eligibility_category",
+          "pregnancy_details",
+          "child_details",
+          "application_status"
+        ]
+      },
+      "application": {
+        "authority": "PMMVY portal / Anganwadi Worker / ASHA",
+        "portal": "https://pmmvy.wcd.gov.in/",
+        "modes": [
+          "citizen self-registration",
+          "Anganwadi Worker",
+          "ASHA worker"
+        ]
+      },
+      "deadlines": "Eligible beneficiary can register up to 270 days from childbirth under current FAQ; milestone-specific timing applies.",
+      "stateVariation": {
+        "nonImplementingStates": [
+          "Odisha",
+          "Telangana"
+        ],
+        "note": "These States are not implementing PMMVY because they operate their own maternity benefit schemes."
+      },
+      "grievance": "PMMVY portal/State WCD or Social Welfare implementation channels.",
+      "currentStatus": "active_with_state_exceptions",
+      "aiSafety": [
+        "Do not recommend PMMVY in Odisha or Telangana without checking the State's replacement maternity scheme.",
+        "₹6,000 applies only to eligible second-child girl cases.",
+        "Do not omit milestone conditions."
+      ],
+      "source": {
+        "authority": "Ministry of Women & Child Development",
+        "officialPortal": "https://www.spniwcd.wcd.gov.in/pradhan-mantri-matru-vandana-yojna",
+        "operationalGuidelines": "PMMVY official FAQ",
+        "secondaryOfficialSource": "https://www.spniwcd.wcd.gov.in/pradhan-mantri-matru-vandana-yojna/faqs",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Eligible pregnant/lactating woman registers through PMMVY system/Anganwadi/ASHA",
+        "Eligibility and Aadhaar-linked payment details are verified",
+        "Required health milestones are recorded",
+        "Benefit is transferred by DBT when conditions are met"
+      ],
+      "applicationSteps": [
+        "Register through PMMVY portal or Anganwadi/ASHA",
+        "Provide Aadhaar, mobile, bank/post-office and eligibility details",
+        "Submit pregnancy/child and health milestone information",
+        "Track status through the official system/local implementation channel"
+      ],
+      "paymentOrDelivery": "₹5,000 for first living child in two instalments; ₹6,000 for eligible second child when the second child is a girl, in one instalment, subject to conditions.",
+      "notGuaranteed": [
+        "Payment depends on eligibility and completion/verification of required milestones.",
+        "Odisha and Telangana are not implementing PMMVY and have their own maternity schemes."
+      ],
+      "fraudWarnings": [
+        "Do not pay unofficial agents for PMMVY registration.",
+        "Do not share OTP or bank credentials."
+      ],
+      "sourceToFactMap": {
+        "benefit": "Current MWCD PMMVY official brief",
+        "stateExceptions": "Current MWCD PMMVY official brief",
+        "milestones": "Official PMMVY 2.0 documents/PIB"
+      }
+    },
+    {
+      "id": "ddu_gky",
+      "name": "Deen Dayal Upadhyaya Grameen Kaushalya Yojana",
+      "shortName": "DDU-GKY",
+      "authority": "Ministry of Rural Development",
+      "level": "central",
+      "category": "rural_skill_development",
+      "purpose": "Placement-linked skill development for poor rural youth to improve employability and access to regular wage employment.",
+      "targetBeneficiary": "Poor rural youth generally aged 15–35 years; upper age limit is 45 for women and specified special groups under applicable rules.",
+      "benefit": {
+        "type": "placement_linked_skill_training",
+        "components": [
+          "skill training",
+          "certification",
+          "placement linkage",
+          "employment support"
+        ]
+      },
+      "eligibility": {
+        "ruralPoorYouth": true,
+        "age": {
+          "general": "15-35",
+          "womenAndSpecifiedSpecialGroups": "up to 45"
+        },
+        "courseAndStateAvailabilityApplies": true
+      },
+      "documents": [
+        "identity/age proof",
+        "rural/household eligibility documents as required by State implementing agency",
+        "bank details where required",
+        "education/qualification documents where course requires them"
+      ],
+      "verification": {
+        "trainingCentreAndCourseApprovalRequired": true
+      },
+      "identificationData": {
+        "fields": [
+          "candidate_name",
+          "age",
+          "gender",
+          "rural_status",
+          "category",
+          "training_centre",
+          "course",
+          "job_role",
+          "training_status",
+          "placement_status"
+        ]
+      },
+      "application": {
+        "authority": "State implementing agency / approved DDU-GKY training centre",
+        "portal": "Official DDU-GKY/Kushal Bharat systems",
+        "modes": [
+          "approved training centre",
+          "State implementation agency"
+        ]
+      },
+      "deadlines": "Course/batch-specific; no single national citizen deadline.",
+      "grievance": "Training centre, State DDU-GKY implementing agency and Ministry/official programme grievance channels.",
+      "stateVariation": "Course availability, centres, implementing agencies and batch schedules vary by State/UT.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "Placement-linked does not mean a guaranteed job for every candidate.",
+        "Do not promise a specific salary.",
+        "Always check current approved training centre/course availability."
+      ],
+      "source": {
+        "authority": "Ministry of Rural Development",
+        "officialPortal": "https://kaushalbharat.gov.in/",
+        "operationalGuidelines": "PIB DDU-GKY official programme information",
+        "secondaryOfficialSource": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2210378&lang=1&reg=1",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Eligible rural youth selects an approved training pathway",
+        "Training is delivered through approved centres/implementing agencies",
+        "Candidates receive skill training and assessment/certification",
+        "Programme is placement-linked with mandatory social inclusion requirements"
+      ],
+      "applicationSteps": [
+        "Find an approved DDU-GKY training centre/course",
+        "Complete candidate registration and eligibility verification",
+        "Attend training and assessment",
+        "Use placement support after certification"
+      ],
+      "paymentOrDelivery": "Skill training and placement support; programme documents describe placement linkage and a minimum placement requirement for implementing projects.",
+      "notGuaranteed": [
+        "Do not promise a specific employer, salary or job location.",
+        "Training centre/course availability varies by State and batch."
+      ],
+      "fraudWarnings": [
+        "Verify that the centre/course is approved.",
+        "Do not pay unofficial fees for a guaranteed job."
+      ],
+      "sourceToFactMap": {
+        "age": "PIB official DDU-GKY information",
+        "womenAge": "PIB official DDU-GKY information",
+        "placementLinkage": "PIB official DDU-GKY information",
+        "implementation": "Official Kaushal Bharat/DDU-GKY information"
+      }
+    },
+    {
+      "id": "vb_g_ram_g",
+      "name": "Viksit Bharat – Guarantee for Rozgar and Ajeevika Mission (Gramin)",
+      "shortName": "VB-G RAM G",
+      "authority": "Ministry of Rural Development",
+      "level": "central",
+      "category": "rural_wage_employment",
+      "purpose": "Statutory rural wage-employment guarantee and rural livelihood/asset creation framework.",
+      "targetBeneficiary": "Rural households whose adult members volunteer to do unskilled manual work and satisfy the Act's conditions.",
+      "benefit": {
+        "employmentGuaranteeDaysPerHouseholdPerFinancialYear": 125,
+        "workType": "unskilled manual work",
+        "nature": "statutory demand-driven wage employment guarantee"
+      },
+      "eligibility": {
+        "ruralHouseholdRequired": true,
+        "adultMembersVolunteerForUnskilledManualWork": true,
+        "statutoryActConditionsApply": true
+      },
+      "documents": [
+        "current rural employment/job-card records as required",
+        "household/member details",
+        "bank/post-office payment details as required",
+        "local application records"
+      ],
+      "verification": {
+        "jobCardAndLocalRegistrationRequired": true,
+        "existingMGNREGAJobCardsTransition": "Existing job cards remain valid during transition until replacement/issuance of Gramin Rozgar Guarantee Cards as applicable."
+      },
+      "identificationData": {
+        "fields": [
+          "household_id",
+          "adult_worker_details",
+          "job_card_or_gramin_rozgar_guarantee_card",
+          "gram_panchayat",
+          "work_demand_date",
+          "work_allotment",
+          "attendance",
+          "wage_payment_status"
+        ]
+      },
+      "application": {
+        "authority": "Gram Panchayat / designated local implementation system",
+        "portal": "Official VB-G RAM G Government system",
+        "modes": [
+          "Gram Panchayat",
+          "designated local employment system"
+        ],
+        "officialSystemUrl": "https://vbgramgweb1.dord.gov.in/"
+      },
+      "deadlines": "Employment is demand-driven; applicable demand, work allocation and wage-payment timelines follow the Act/rules.",
+      "grievance": "Use Gram Panchayat/block/district implementation and official VB-G RAM G grievance mechanisms.",
+      "stateVariation": "Implementation systems and administrative procedures may vary by State/UT, within the central Act/framework.",
+      "currentStatus": "active_from_2026_07_01",
+      "aiSafety": [
+        "Do not use MGNREGA as the current programme after 01-07-2026.",
+        "Current statutory guarantee is 125 days, not 100 days.",
+        "Do not promise a particular worksite or wage amount without current applicable rules/rates.",
+        "Do not assume every household automatically receives 125 days without the required work demand and eligibility conditions."
+      ],
+      "source": {
+        "authority": "Ministry of Rural Development",
+        "officialPortal": "https://vbgramgweb1.dord.gov.in/",
+        "operationalGuidelines": "PIB VB-G RAM G FAQ and launch releases",
+        "secondaryOfficialSource": "https://www.pib.gov.in/FaqDetails.aspx?ModuleId=4&NoteId=158511&lang=1&reg=3",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Adult members of eligible rural households demand unskilled manual work",
+        "Gram Panchayat/local system registers and processes demand",
+        "Work is allocated within the statutory framework",
+        "Attendance and muster records are maintained",
+        "Wages are paid by DBT; unemployment allowance/delay compensation applies where statutory conditions are met"
+      ],
+      "applicationSteps": [
+        "Approach Gram Panchayat/designated local system",
+        "Register household/workers and obtain/retain applicable employment card",
+        "Submit demand for work",
+        "Receive work allocation and attend assigned work",
+        "Track wage payment and grievance status"
+      ],
+      "paymentOrDelivery": "125 days of statutory wage employment per eligible rural household per financial year; wages are transferred to bank/post-office accounts. Official May 2026 release stated weekly or within 15 days of muster-roll closure, with delay compensation subject to the Act.",
+      "notGuaranteed": [
+        "125 days is a statutory guarantee against demand and applicable conditions; it is not an automatic 125-day cash payment.",
+        "Do not describe MGNREGA as the current programme after 1 July 2026."
+      ],
+      "fraudWarnings": [
+        "Do not pay for a job card or work demand.",
+        "Use Gram Panchayat/designated official channels."
+      ],
+      "sourceToFactMap": {
+        "125Days": "PIB official VB-G RAM G releases",
+        "repealOfMGNREGA": "PIB 11 May 2026 commencement release",
+        "DBTAndWageTimeline": "PIB 11 May 2026 commencement release",
+        "jobCardTransition": "PIB 11 May 2026 commencement release"
+      }
+    },
+    {
+      "id": "pmay_g",
+      "name": "Pradhan Mantri Awaas Yojana – Gramin",
+      "shortName": "PMAY-G",
+      "authority": "Ministry of Rural Development",
+      "level": "central",
+      "category": "rural_housing",
+      "purpose": "Financial assistance for eligible rural households to construct pucca houses with basic amenities.",
+      "targetBeneficiary": "Eligible houseless rural households and households living in eligible kutcha/dilapidated housing identified through prescribed SECC/Awaas+ and exclusion criteria.",
+      "benefit": {
+        "unitAssistance": {
+          "plainAreas": 120000,
+          "northEasternAndHillStatesAndSpecifiedUTs": 130000
+        },
+        "toiletConvergenceAssistance": 12000,
+        "minimumHouseSize": "25 sq. m including dedicated hygienic cooking area",
+        "mode": "beneficiary-led construction with DBT-linked assistance"
+      },
+      "eligibility": {
+        "ruralAreaRequired": true,
+        "housingDeprivationRequired": true,
+        "selectionSources": [
+          "SECC 2011",
+          "Awaas+ data as applicable",
+          "prescribed verification"
+        ],
+        "exclusionChecks": [
+          "pucca_house",
+          "motorised_vehicle/equipment",
+          "government_employee",
+          "registered_non_agri_enterprise",
+          "income_threshold",
+          "income_tax/professional_tax",
+          "landholding thresholds and other prescribed criteria"
+        ]
+      },
+      "documents": [
+        "household identity/details",
+        "land/site details as required",
+        "bank account details",
+        "Awaas+/SECC/Gram Sabha verification records",
+        "other State/UT implementation documents"
+      ],
+      "verification": {
+        "multiStageValidation": true,
+        "gramSabhaAndGeoTaggingProcesses": true
+      },
+      "identificationData": {
+        "fields": [
+          "household_id",
+          "beneficiary_name",
+          "housing_status",
+          "room_count",
+          "wall_roof_type",
+          "deprivation_parameters",
+          "exclusion_parameters",
+          "bank_account",
+          "sanction_status",
+          "construction_stage"
+        ]
+      },
+      "application": {
+        "authority": "Gram Panchayat / PMAY-G implementation system",
+        "portal": "PMAY-G official system",
+        "modes": [
+          "prescribed beneficiary identification",
+          "Awaas+ survey/self-survey where enabled",
+          "Gram Sabha/official verification"
+        ]
+      },
+      "deadlines": "Beneficiary selection and survey windows are administrative/State-specific; no universal walk-in application deadline.",
+      "grievance": "Gram Panchayat/block/district PMAY-G grievance and State Rural Development channels.",
+      "stateVariation": "State/UT implementation, beneficiary verification and land/site procedures vary.",
+      "currentStatus": "active_fy_2024_25_to_2028_29",
+      "aiSafety": [
+        "Do not tell a citizen that simply filling a form guarantees a house.",
+        "Selection depends on prescribed deprivation/exclusion criteria and verification.",
+        "Do not use outdated MGNREGA-specific wage convergence figures without current VB-G RAM G rules."
+      ],
+      "source": {
+        "authority": "Ministry of Rural Development",
+        "officialPortal": "https://pmayg.nic.in/",
+        "operationalGuidelines": "PIB PMAY-G current financial assistance",
+        "secondaryOfficialSource": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2288998&lang=1&reg=48",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Eligible rural households are identified through prescribed data and surveys",
+        "Deprivation and exclusion criteria are checked",
+        "Beneficiary is verified/sanctioned",
+        "Construction progresses through prescribed stages",
+        "Assistance is released through DBT-linked process and convergence"
+      ],
+      "applicationSteps": [
+        "Check inclusion/identification through Gram Panchayat/Awaas system",
+        "Participate in prescribed Awaas+/verification process when open",
+        "Provide bank/land/household information",
+        "Complete sanction and construction-stage requirements",
+        "Track sanction/construction/payment status"
+      ],
+      "paymentOrDelivery": "₹1.20 lakh unit assistance in plain areas and ₹1.30 lakh in specified NE/hill areas; ₹12,000 toilet assistance through SBM-G convergence.",
+      "notGuaranteed": [
+        "Submitting an application does not itself guarantee a house.",
+        "Selection is based on prescribed deprivation/exclusion and verification criteria."
+      ],
+      "fraudWarnings": [
+        "Do not pay for inclusion in PMAY-G lists.",
+        "Do not trust anyone promising guaranteed sanction."
+      ],
+      "sourceToFactMap": {
+        "unitAssistance": "PIB PMAY-G current 2026 release",
+        "toiletAssistance": "PIB PMAY-G current 2026 release",
+        "identification": "PMAY-G official guidelines/system"
+      }
+    },
+    {
+      "id": "jal_jeevan_mission_2_0",
+      "name": "Jal Jeevan Mission 2.0",
+      "shortName": "JJM 2.0",
+      "authority": "Department of Drinking Water & Sanitation, Ministry of Jal Shakti",
+      "level": "central",
+      "category": "rural_drinking_water",
+      "purpose": "Provide reliable, adequate and safe rural piped drinking-water services with stronger sustainability, governance and service-delivery systems.",
+      "targetBeneficiary": "Rural households covered by State/UT rural drinking-water systems.",
+      "benefit": {
+        "type": "public_service",
+        "service": "rural_piped_drinking_water",
+        "missionExtension": "through December 2028",
+        "nationalGoal": "tap water service to all rural households subject to implementation"
+      },
+      "eligibility": {
+        "ruralHouseholdCoverage": true,
+        "stateRuralWaterSupplyPlanningApplies": true
+      },
+      "documents": "Generally not a direct individual cash-application scheme; household coverage is implemented through State/UT rural water-supply programmes.",
+      "verification": {
+        "serviceDeliveryAndFunctionalityMonitoring": true,
+        "digitalFramework": "Sujalam Bharat"
+      },
+      "identificationData": {
+        "fields": [
+          "state",
+          "district",
+          "block",
+          "gram_panchayat",
+          "village",
+          "household_tap_connection_status",
+          "service_area_id",
+          "water_supply_scheme_id",
+          "functionality_status"
+        ]
+      },
+      "application": {
+        "authority": "State/UT Rural Water Supply / PHED / Panchayati Raj implementation structure",
+        "portal": "https://jaljeevanmission.gov.in/",
+        "modes": [
+          "State/UT implementation",
+          "Gram Panchayat/VWSC/local water-supply structures"
+        ]
+      },
+      "deadlines": "Mission period extended through December 2028; household-level implementation timelines are State/local-system dependent.",
+      "grievance": "State/UT water-supply grievance systems, Gram Panchayat/VWSC and official JJM service-feedback mechanisms.",
+      "stateVariation": "Strong State/UT implementation variation in infrastructure, source, service delivery and local management.",
+      "currentStatus": "active_jjm_2_0",
+      "aiSafety": [
+        "JJM 2.0 is a public-service mission, not a ₹ benefit paid directly to households.",
+        "Do not promise a personal cash payment.",
+        "Check local service status rather than assuming every rural household currently has functional tap water."
+      ],
+      "source": {
+        "authority": "Department of Drinking Water & Sanitation, Ministry of Jal Shakti",
+        "officialPortal": "https://jaljeevanmission.gov.in/",
+        "operationalGuidelines": "PIB JJM 2.0 Cabinet approval/current implementation",
+        "secondaryOfficialSource": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2237550&lang=1&reg=3",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "State/UT plans and implements rural piped water systems",
+        "JJM 2.0 shifts emphasis from infrastructure creation toward service delivery and sustainability",
+        "Village-level/community structures support local ownership and operation",
+        "Digital mapping and service-area IDs support monitoring"
+      ],
+      "applicationSteps": [
+        "This is generally not an individual cash-application scheme",
+        "Check household connection/service status through Gram Panchayat/State rural water-supply authority",
+        "Report non-functionality through the State/local grievance mechanism"
+      ],
+      "paymentOrDelivery": "Public drinking-water service delivered through rural piped water infrastructure; no direct household cash benefit is defined by the mission.",
+      "notGuaranteed": [
+        "A rural household's geographic coverage does not by itself prove that its tap has continuous functional water service."
+      ],
+      "fraudWarnings": [
+        "Do not pay unofficial persons for a promised JJM household cash benefit; JJM is primarily a public service programme."
+      ],
+      "sourceToFactMap": {
+        "extension": "PIB Cabinet approval 10 Mar 2026",
+        "outlay": "PIB Cabinet approval 10 Mar 2026",
+        "serviceDeliveryFocus": "PIB JJM 2.0 releases",
+        "sujalamBharat": "PIB Cabinet approval 10 Mar 2026"
+      }
+    },
+    {
+      "id": "pmjdy",
+      "name": "Pradhan Mantri Jan-Dhan Yojana",
+      "shortName": "PMJDY",
+      "authority": "Department of Financial Services, Ministry of Finance",
+      "level": "central",
+      "category": "financial_inclusion",
+      "purpose": "Universal access to basic banking, remittance, credit, insurance and pension-related financial services.",
+      "targetBeneficiary": "Unbanked/eligible individuals seeking a basic savings bank deposit account.",
+      "benefit": {
+        "account": "basic savings bank deposit account",
+        "minimumBalance": 0,
+        "debitCard": "RuPay",
+        "accidentInsurance": "₹2 lakh for new PMJDY accounts opened after 28.08.2018, subject to applicable conditions",
+        "overdraft": "up to ₹10,000 for eligible account holders",
+        "dbt": true
+      },
+      "eligibility": {
+        "unbankedPersonFocus": true,
+        "accountOpeningThroughBankOrBankMitra": true,
+        "overdraftHasAdditionalEligibility": true
+      },
+      "documents": [
+        "identity/address/KYC documents as accepted by bank",
+        "Aadhaar where applicable",
+        "other bank KYC documents where required"
+      ],
+      "verification": {
+        "bankKycRequired": true,
+        "overdraftEligibilityCheckedByBank": true
+      },
+      "identificationData": {
+        "fields": [
+          "account_holder_name",
+          "kyc_id",
+          "mobile",
+          "bank",
+          "branch",
+          "account_number",
+          "ifsc",
+          "rupay_status",
+          "dbt_status",
+          "overdraft_eligibility"
+        ]
+      },
+      "application": {
+        "authority": "Participating bank / Business Correspondent (Bank Mitra)",
+        "portal": "https://www.pmjdy.gov.in/",
+        "modes": [
+          "bank branch",
+          "Bank Mitra/Business Correspondent"
+        ]
+      },
+      "deadlines": "No universal national application deadline.",
+      "grievance": "Concerned bank grievance mechanism and PMJDY/Department of Financial Services channels.",
+      "stateVariation": "Bank-level KYC and service availability may vary; core scheme benefits are centrally defined.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "Overdraft is not automatic for every PMJDY account.",
+        "Accident insurance is subject to RuPay/card and applicable conditions.",
+        "Do not claim ₹10,000 overdraft without checking eligibility."
+      ],
+      "source": {
+        "authority": "Department of Financial Services, Ministry of Finance",
+        "officialPortal": "https://www.pmjdy.gov.in/",
+        "operationalGuidelines": "PMJDY official scheme details",
+        "secondaryOfficialSource": "https://www.pmjdy.gov.in/scheme",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "Unbanked person opens BSBD/PMJDY account through bank branch or Bank Mitra",
+        "KYC is completed",
+        "RuPay card and account services are provided",
+        "Eligible account holders may access overdraft and linked government financial services"
+      ],
+      "applicationSteps": [
+        "Visit a bank branch or Bank Mitra",
+        "Submit KYC/identity documents",
+        "Open PMJDY/BSBD account",
+        "Collect/activate RuPay card as applicable",
+        "Link account for DBT where required"
+      ],
+      "paymentOrDelivery": "Basic bank account with no minimum balance requirement; RuPay card; eligible account holders may receive overdraft up to ₹10,000; applicable accident insurance with RuPay card; DBT eligibility.",
+      "notGuaranteed": [
+        "Overdraft and insurance benefits have eligibility/usage conditions; they are not automatic cash grants."
+      ],
+      "fraudWarnings": [
+        "Never share ATM PIN, OTP or full banking credentials.",
+        "Use bank/Bank Mitra or official PMJDY channels."
+      ],
+      "sourceToFactMap": {
+        "account": "Official PMJDY scheme details",
+        "zeroBalance": "Official PMJDY scheme details",
+        "overdraft": "Official PMJDY scheme details",
+        "insurance": "Official PMJDY scheme details"
+      }
+    },
+    {
+      "id": "nsap",
+      "name": "National Social Assistance Programme",
+      "shortName": "NSAP",
+      "authority": "Ministry of Rural Development",
+      "level": "central",
+      "category": "social_assistance",
+      "purpose": "Provide central social assistance through old-age, widow and disability pensions and family-benefit/food-grain components.",
+      "targetBeneficiary": "Eligible BPL/covered elderly persons, widows, persons with specified disability, and families covered by NFBS/Annapurna components.",
+      "benefit": {
+        "components": {
+          "ignoaps": {
+            "age60to79": 200,
+            "age80plus": 500,
+            "unit": "₹/month central assistance"
+          },
+          "ignwps": {
+            "age40to79": 300,
+            "age80plus": 500,
+            "unit": "₹/month central assistance"
+          },
+          "igndps": {
+            "age18to79": 300,
+            "age80plus": 500,
+            "unit": "₹/month central assistance for eligible 80% disability category"
+          },
+          "nfbs": {
+            "amount": 20000,
+            "unit": "one-time",
+            "condition": "death of primary breadwinner aged 18-59 in eligible BPL family"
+          },
+          "annapurna": {
+            "foodgrains": "10 kg/month",
+            "condition": "eligible BPL senior citizens not receiving old-age pension"
+          }
+        }
+      },
+      "eligibility": {
+        "componentSpecific": true,
+        "bplAndAgeOrDisabilityCriteriaApply": true
+      },
+      "documents": [
+        "age proof",
+        "BPL/eligibility records",
+        "disability certificate where applicable",
+        "death certificate and family records for NFBS",
+        "bank account details",
+        "State/local application documents"
+      ],
+      "verification": {
+        "stateAndLocalBeneficiaryVerification": true
+      },
+      "identificationData": {
+        "fields": [
+          "beneficiary_name",
+          "age",
+          "gender",
+          "bpl_status",
+          "disability_status",
+          "family_details",
+          "bank_account",
+          "pension_component",
+          "sanction_status"
+        ]
+      },
+      "application": {
+        "authority": "Gram Panchayat/local authority/State implementing system",
+        "portal": "NSAP official Government systems",
+        "modes": [
+          "Gram Panchayat",
+          "local authority",
+          "State/UT social-assistance system"
+        ]
+      },
+      "deadlines": "Component and State/local process specific; NFBS and Annapurna are demand-based components.",
+      "grievance": "State/UT social-assistance and local authority grievance channels.",
+      "stateVariation": "States/UTs may add their own contributions; final pension paid to a beneficiary can therefore exceed the central assistance.",
+      "currentStatus": "active",
+      "aiSafety": [
+        "Do not state central assistance as the final State pension without checking the State/UT.",
+        "Do not assume every elderly person qualifies; applicable BPL/coverage and component criteria apply.",
+        "NFBS and Annapurna are distinct components, not monthly pension payments."
+      ],
+      "source": {
+        "authority": "Ministry of Rural Development",
+        "officialPortal": "https://nsap.nic.in/",
+        "operationalGuidelines": "PIB NSAP current assistance details",
+        "secondaryOfficialSource": "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2210378&lang=1&reg=1",
+        "lastVerified": "2026-09-09"
+      },
+      "howItWorks": [
+        "State/local authorities identify and verify eligible beneficiaries under NSAP components",
+        "Eligible beneficiary is sanctioned under the relevant component",
+        "Central assistance and State contribution are processed through the applicable system",
+        "Beneficiary can track payment/status through official channels such as NSAP/UMANG where available"
+      ],
+      "applicationSteps": [
+        "Contact Gram Panchayat/local authority/State social assistance office",
+        "Submit age/disability/family/BPL and bank documents as applicable",
+        "Complete State/local verification",
+        "Track sanction and payment status"
+      ],
+      "paymentOrDelivery": "Central assistance varies by component: IGNOAPS ₹200/month age 60–79 and ₹500 age 80+; IGNWPS ₹300/month age 40–79 and ₹500 age 80+; IGNDPS ₹300/month for eligible 18–79 and ₹500 age 80+; NFBS ₹20,000 one-time; Annapurna 10 kg foodgrains/month for eligible uncovered senior citizens.",
+      "notGuaranteed": [
+        "The central amount is not necessarily the final amount received; States/UTs may add contributions.",
+        "NFBS and Annapurna are demand-based components."
+      ],
+      "fraudWarnings": [
+        "Do not pay for inclusion in pension lists.",
+        "Verify beneficiary status through local authority/NSAP/official channels."
+      ],
+      "sourceToFactMap": {
+        "componentAmounts": "PIB NSAP current assistance details",
+        "stateContribution": "PIB NSAP current assistance details",
+        "UMANGStatus": "Official/PIB NSAP information"
+      }
+    }
+  ]
+}
