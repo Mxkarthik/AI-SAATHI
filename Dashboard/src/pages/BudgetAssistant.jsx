@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Pencil, Mic, MicOff, Trash2, Send, ChevronDown, ChevronUp } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
 import { useLanguage } from "../i18n/LanguageContext";
+import { useAuth } from "../hooks/useAuth";
 import {
   getSummary,
   getTransactions,
@@ -10,11 +11,11 @@ import {
 } from "../utils/transactionApi";
 import SpendingAnalyzer from "../components/SpendingAnalyzer";
 
-// ── Language config ────────────────────────────────────────────────────────
+// ── Language config (guide panel only) ────────────────────────────────────
 const LANGUAGES = [
-  { code: "en-IN", label: "English",  flag: "🇬🇧" },
-  { code: "te-IN", label: "తెలుగు",   flag: "🇮🇳" },
-  { code: "hi-IN", label: "हिंदी",    flag: "🇮🇳" },
+  { code: "en-IN", label: "English", flag: "🇬🇧" },
+  { code: "te-IN", label: "తెలుగు",  flag: "🇮🇳" },
+  { code: "hi-IN", label: "हिंदी",   flag: "🇮🇳" },
 ];
 
 // ── Voice example phrases ──────────────────────────────────────────────────
@@ -22,26 +23,16 @@ const VOICE_EXAMPLES = {
   "en-IN": {
     sections: [
       { title: "💸 Expenses", color: "text-red-400", examples: [
-        "I spent 2 lakh on land",
-        "Bought a car for 8 lakh",
-        "Paid 500 for electricity bill",
-        "Spent 1000 on food",
-        "Paid 10000 for school fees",
-        "Bought medicines for 300",
-        "Spent 50000 on house renovation",
-        "Paid 5000 for wedding",
+        "I spent 2 lakh on land", "Bought a car for 8 lakh",
+        "Paid 500 for electricity bill", "Spent 1000 on food",
+        "Paid 10000 for school fees", "Spent 50000 on house renovation",
       ]},
       { title: "💰 Earnings", color: "text-green-400", examples: [
-        "I earned 4 lakh salary",
-        "Received 20000 income",
-        "Got 50000 from business",
-        "Earned 10000 commission",
-        "Got 15000 wages",
+        "I earned 4 lakh salary", "Received 20000 income",
+        "Got 50000 from business", "Earned 10000 commission",
       ]},
       { title: "🏦 Savings", color: "text-blue-400", examples: [
-        "I saved 5000",
-        "Put aside 10000",
-        "Set aside 2 lakh in FD",
+        "I saved 5000", "Put aside 10000", "Set aside 2 lakh in FD",
       ]},
     ],
   },
@@ -51,16 +42,12 @@ const VOICE_EXAMPLES = {
         "నేను 2 లక్షలు భూమికి ఖర్చు చేసాను",
         "500 రూపాయలు తిండికి ఖర్చు చేసాను",
         "1000 రూపాయలు కరెంట్ బిల్లు చెల్లించాను",
-        "పది వేలు స్కూల్ ఫీజు కట్టాను",
         "8 లక్షలకు కారు కొన్నాను",
-        "300 రూపాయలు మందులకు పెట్టాను",
-        "5000 పెళ్లికి ఖర్చు చేసాను",
       ]},
       { title: "💰 సంపాదన", color: "text-green-400", examples: [
         "నేను 4 లక్షలు జీతం అందుకున్నాను",
         "20000 రూపాయలు వచ్చింది",
         "వ్యాపారం నుండి 50000 వచ్చాయి",
-        "10000 రూపాయలు కమీషన్ వచ్చింది",
       ]},
       { title: "🏦 పొదుపు", color: "text-blue-400", examples: [
         "5000 రూపాయలు దాచుకున్నాను",
@@ -74,20 +61,15 @@ const VOICE_EXAMPLES = {
         "मैंने 2 लाख जमीन पर खर्च किया",
         "500 रुपये खाने पर खर्च किए",
         "1000 रुपये बिजली बिल भरा",
-        "10000 रुपये स्कूल फीस दी",
         "8 लाख में कार खरीदी",
-        "300 रुपये दवाई पर खर्च किए",
-        "5000 शादी में खर्च किए",
       ]},
       { title: "💰 कमाई", color: "text-green-400", examples: [
         "मुझे 4 लाख तनख्वाह मिली",
         "20000 रुपये आमदनी हुई",
         "व्यापार से 50000 मिले",
-        "10000 कमीशन मिला",
       ]},
       { title: "🏦 बचत", color: "text-blue-400", examples: [
-        "5000 रुपये बचाए",
-        "10000 जमा किए",
+        "5000 रुपये बचाए", "10000 जमा किए",
       ]},
     ],
   },
@@ -95,36 +77,33 @@ const VOICE_EXAMPLES = {
 
 // ── Component ──────────────────────────────────────────────────────────────
 const BudgetAssistant = () => {
-  const { t } = useLanguage();
+  const { t }    = useLanguage();
+  const { user } = useAuth();
 
   const [summary, setSummary] = useState({
     totalExpenses: 0, totalEarnings: 0, totalSavings: 0, netBalance: 0,
   });
-  const [transactions, setTransactions]   = useState([]);
-  const [analyzerKey, setAnalyzerKey]     = useState(0);
+  const [transactions, setTransactions] = useState([]);
+  const [analyzerKey, setAnalyzerKey]   = useState(0);
 
-  // Voice state
-  const [selectedLang, setSelectedLang]   = useState("en-IN");
   const [recording, setRecording]         = useState(false);
   const [status, setStatus]               = useState("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const [lastHeard, setLastHeard]         = useState("");
-  const [speechSupported, setSpeechSupported] = useState(true);
 
-  // Text input
   const [manualText, setManualText] = useState("");
-
-  // Guide
+  const [guideTab, setGuideTab]     = useState("en-IN");
   const [showGuide, setShowGuide]   = useState(false);
 
-  // History panels
   const [showExpenseHistory, setShowExpenseHistory] = useState(false);
   const [showEarningHistory, setShowEarningHistory] = useState(false);
 
+  // Web Speech API ref
   const recognitionRef = useRef(null);
+
   const { totalExpenses, totalEarnings, totalSavings, netBalance } = summary;
 
-  // ── Load data ────────────────────────────────────────────────────────────
+  // ── Load data from MongoDB ─────────────────────────────────────────────
   const loadAll = useCallback(async () => {
     try {
       const [s, tx] = await Promise.all([getSummary(), getTransactions()]);
@@ -145,51 +124,7 @@ const BudgetAssistant = () => {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Check support
-  useEffect(() => {
-    if (!window.SpeechRecognition && !window.webkitSpeechRecognition)
-      setSpeechSupported(false);
-  }, []);
-
-  // ── Re-create recognizer whenever selectedLang changes ───────────────────
-  useEffect(() => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
-
-    const rec = new SR();
-    rec.continuous    = false;
-    rec.interimResults = false;
-    rec.lang          = selectedLang;
-
-    rec.onresult = (e) => {
-      const text = (e.results[0]?.[0]?.transcript || "").trim();
-      setLastHeard(text);
-      if (text) handleTranscriptRef.current(text);
-      else {
-        setStatus("error");
-        setStatusMessage("Nothing heard. Please try again.");
-      }
-    };
-
-    rec.onerror = (e) => {
-      setRecording(false);
-      setStatus("error");
-      if (e.error === "not-allowed")
-        setStatusMessage("Microphone blocked — allow mic access in browser settings.");
-      else if (e.error === "no-speech")
-        setStatusMessage("No speech detected. Speak clearly and try again.");
-      else
-        setStatusMessage(`Mic error (${e.error}). Use the text box instead.`);
-    };
-
-    rec.onend = () => setRecording(false);
-
-    recognitionRef.current = rec;
-  }, [selectedLang]);
-
-  // ── Keep handleTranscript in a ref so rec.onresult always sees latest ────
-  const handleTranscriptRef = useRef(null);
-
+  // ── Handle transcript (voice or text) ─────────────────────────────────
   const handleTranscript = useCallback(async (text) => {
     if (!text?.trim()) return;
     setStatus("processing");
@@ -205,40 +140,83 @@ const BudgetAssistant = () => {
     }
   }, [loadAll]);
 
-  useEffect(() => {
-    handleTranscriptRef.current = handleTranscript;
-  }, [handleTranscript]);
-
-  // ── Mic controls ─────────────────────────────────────────────────────────
+  // ── Web Speech API: start / stop ───────────────────────────────────────
   const startRecording = () => {
-    if (!speechSupported) {
+    if (recording) return;
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
       setStatus("error");
-      setStatusMessage("Speech not supported. Use the text box.");
+      setStatusMessage("Voice input not supported in this browser. Use the text box.");
       return;
     }
-    if (!recognitionRef.current || recording) return;
-    setLastHeard("");
-    setStatus("listening");
-    const langLabel = LANGUAGES.find((l) => l.code === selectedLang)?.label || selectedLang;
-    setStatusMessage(`Listening in ${langLabel}… speak now`);
-    setRecording(true);
-    try {
-      recognitionRef.current.start();
-    } catch (err) {
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous      = false;
+    recognition.interimResults  = true;
+    recognition.lang            = "en-IN"; // browser picks up multilingual input naturally
+
+    recognition.onstart = () => {
+      setRecording(true);
+      setStatus("listening");
+      setStatusMessage("🎙️ Listening… speak in any language");
+      setLastHeard("");
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map((r) => r[0].transcript)
+        .join("");
+      setLastHeard(transcript);
+      setStatus("processing");
+      setStatusMessage(`Heard: "${transcript}"`);
+    };
+
+    recognition.onerror = (event) => {
       setRecording(false);
       setStatus("error");
-      setStatusMessage("Could not start mic. Try again.");
-    }
+      if (event.error === "not-allowed" || event.error === "permission-denied") {
+        setStatusMessage("Microphone blocked — allow mic access in browser settings.");
+      } else {
+        setStatusMessage("Mic error. Use the text box instead.");
+      }
+      console.error("Speech recognition error:", event.error);
+    };
+
+    recognition.onend = () => {
+      setRecording(false);
+      const finalText = recognitionRef.current?._lastTranscript;
+      if (finalText?.trim()) {
+        handleTranscript(finalText.trim());
+      } else {
+        setStatus("error");
+        setStatusMessage("Nothing detected. Please try again or use the text box.");
+      }
+    };
+
+    // Store last transcript so onend can access it
+    const originalOnResult = recognition.onresult;
+    recognition.onresult = (event) => {
+      originalOnResult(event);
+      recognition._lastTranscript = Array.from(event.results)
+        .map((r) => r[0].transcript)
+        .join("");
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
   };
 
   const stopRecording = () => {
-    try { recognitionRef.current?.stop(); } catch (_) {}
+    recognitionRef.current?.stop();
     setRecording(false);
     setStatus("idle");
     setStatusMessage("");
   };
 
-  // ── Manual text submit ────────────────────────────────────────────────────
+  // ── Manual text submit ─────────────────────────────────────────────────
   const handleManualSubmit = async (e) => {
     e.preventDefault();
     const text = manualText.trim();
@@ -247,29 +225,28 @@ const BudgetAssistant = () => {
     await handleTranscript(text);
   };
 
-  // ── Delete ────────────────────────────────────────────────────────────────
+  // ── Delete ─────────────────────────────────────────────────────────────
   const handleDelete = async (id) => {
     try { await deleteTransaction(id); await loadAll(); }
     catch (err) { setStatus("error"); setStatusMessage(err.message || "Couldn't delete."); }
   };
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────
   const expenseHistory = transactions.filter((tx) => tx.type === "expense");
   const earningHistory = transactions.filter((tx) => tx.type === "earning");
-  const formatDate     = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  const typeLabel      = { expense: "Expense", earning: "Earning", saving: "Saving" };
-  const chartData      = [
+  const formatDate = (d) => new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  const typeLabel  = { expense: "Expense", earning: "Earning", saving: "Saving" };
+  const chartData  = [
     { name: "Expenses", value: totalExpenses },
     { name: "Earnings", value: totalEarnings },
   ];
   const statusColor =
     status === "error"     ? "text-red-400"
     : status === "success" ? "text-green-400"
-    : status === "listening" || status === "processing" ? "text-blue-300 animate-pulse"
+    : ["listening","processing","connecting"].includes(status) ? "text-blue-300 animate-pulse"
     : "text-yellow-200";
 
-  const currentGuide = VOICE_EXAMPLES[selectedLang];
-  const currentLangMeta = LANGUAGES.find((l) => l.code === selectedLang);
+  const activeGuide = VOICE_EXAMPLES[guideTab];
 
   return (
     <div className="min-h-screen bg-black text-yellow-400 p-6">
@@ -281,45 +258,31 @@ const BudgetAssistant = () => {
           {/* RECORD PANEL */}
           <div className="border border-yellow-500 bg-[#07150f] rounded-xl p-6 shadow-lg space-y-4">
 
-            {/* Title + language selector */}
-            <div className="flex items-center justify-between flex-wrap gap-3">
+            {/* Header */}
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <p className="text-sm font-semibold">
                 {t("budgetAssistant", "recordTransaction")}
               </p>
-              {/* Language selector — BIG and obvious */}
-              <div className="flex gap-2">
-                {LANGUAGES.map((lang) => (
-                  <button
-                    key={lang.code}
-                    onClick={() => {
-                      setSelectedLang(lang.code);
-                      setStatus("idle");
-                      setStatusMessage("");
-                      setLastHeard("");
-                    }}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border-2 transition-all ${
-                      selectedLang === lang.code
-                        ? "bg-yellow-400 text-black border-yellow-400 scale-105 shadow-lg shadow-yellow-400/20"
-                        : "text-yellow-400 border-yellow-700 hover:border-yellow-400 bg-transparent"
-                    }`}
-                  >
-                    <span>{lang.flag}</span>
-                    <span>{lang.label}</span>
-                  </button>
-                ))}
-              </div>
+              <span className="flex items-center gap-1.5 bg-green-900/40 border border-green-700 text-green-300 text-[10px] px-2.5 py-1 rounded-full font-medium">
+                🎙️ Voice · Auto Language Detection
+              </span>
             </div>
 
-            {/* Selected language hint */}
-            <p className="text-[11px] text-gray-500 text-center">
-              Selected: <span className="text-yellow-300 font-semibold">{currentLangMeta?.flag} {currentLangMeta?.label}</span>
-              {" "}— tap the mic and speak in {currentLangMeta?.label}
-            </p>
+            {/* Supported languages */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] text-gray-500">Understands:</span>
+              {LANGUAGES.map((l) => (
+                <span key={l.code} className="text-[10px] bg-yellow-400/10 border border-yellow-800 text-yellow-300 px-2 py-0.5 rounded-full">
+                  {l.flag} {l.label}
+                </span>
+              ))}
+              <span className="text-[10px] text-gray-600">+ any Indian language</span>
+            </div>
 
             {/* Mic + summary stats */}
             <div className="grid grid-cols-4 gap-4 items-center">
 
-              {/* MIC */}
+              {/* MIC BUTTON */}
               <div className="flex flex-col items-center gap-2">
                 <button
                   onClick={recording ? stopRecording : startRecording}
@@ -331,7 +294,9 @@ const BudgetAssistant = () => {
                 >
                   {recording ? <MicOff size={24} /> : <Mic size={24} />}
                 </button>
-                <p className="text-[10px] text-gray-500">{recording ? "Tap to stop" : "Tap & speak"}</p>
+                <p className="text-[10px] text-gray-500 text-center">
+                  {recording ? "Tap to stop" : "Tap & speak"}
+                </p>
                 {status !== "idle" && statusMessage && (
                   <p className={`text-[10px] text-center max-w-[9rem] leading-tight ${statusColor}`}>
                     {statusMessage}
@@ -374,19 +339,13 @@ const BudgetAssistant = () => {
               </p>
             )}
 
-            {/* Text input */}
+            {/* Text input fallback */}
             <form onSubmit={handleManualSubmit} className="flex gap-2">
               <input
                 type="text"
                 value={manualText}
                 onChange={(e) => setManualText(e.target.value)}
-                placeholder={
-                  selectedLang === "te-IN"
-                    ? 'ఉదా: "500 రూపాయలు తిండికి ఖర్చు చేసాను"'
-                    : selectedLang === "hi-IN"
-                    ? 'जैसे: "500 रुपये खाने पर खर्च किए"'
-                    : 'e.g. "I spent 2 lakh on land" or "earned 4 lakh salary"'
-                }
+                placeholder='Type: "I spent 2 lakh on land" / "500 రూపాయలు తిండికి" / "500 खाने पर खर्च"'
                 className="flex-1 bg-[#0d2318] border border-yellow-700 rounded-lg px-3 py-2 text-sm text-yellow-300 placeholder-gray-600 focus:outline-none focus:border-yellow-400"
               />
               <button
@@ -402,18 +361,30 @@ const BudgetAssistant = () => {
               onClick={() => setShowGuide((v) => !v)}
               className="w-full flex items-center justify-between px-3 py-2 rounded-lg border border-yellow-800 hover:border-yellow-500 transition-colors text-xs text-yellow-400"
             >
-              <span>📢 What to say in {currentLangMeta?.label} — tap to see examples</span>
+              <span>📢 What to say — voice examples for all languages</span>
               {showGuide ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
 
-            {/* Voice guide panel — shows examples for SELECTED language only */}
-            {showGuide && currentGuide && (
+            {/* Voice guide panel */}
+            {showGuide && (
               <div className="bg-[#0a1f14] border border-yellow-900 rounded-xl p-4 space-y-4">
-                <p className="text-xs text-yellow-300 font-semibold text-center">
-                  🎙️ Say any of these in {currentLangMeta?.flag} {currentLangMeta?.label}:
-                </p>
+                <div className="flex gap-2">
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => setGuideTab(lang.code)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+                        guideTab === lang.code
+                          ? "bg-yellow-400 text-black border-yellow-400"
+                          : "text-yellow-400 border-yellow-700 hover:border-yellow-400"
+                      }`}
+                    >
+                      {lang.flag} {lang.label}
+                    </button>
+                  ))}
+                </div>
                 <div className="grid md:grid-cols-3 gap-4">
-                  {currentGuide.sections.map((section) => (
+                  {activeGuide.sections.map((section) => (
                     <div key={section.title} className="space-y-2">
                       <p className={`text-xs font-bold ${section.color}`}>{section.title}</p>
                       <div className="space-y-1.5">
@@ -421,7 +392,6 @@ const BudgetAssistant = () => {
                           <div
                             key={ex}
                             onClick={() => setManualText(ex)}
-                            title="Click to fill text box"
                             className="bg-[#071510] border border-yellow-900 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-300 leading-snug cursor-pointer hover:border-yellow-500 hover:text-yellow-200 hover:bg-[#0d2318] transition-all"
                           >
                             🗣 {ex}
@@ -432,7 +402,7 @@ const BudgetAssistant = () => {
                   ))}
                 </div>
                 <p className="text-[10px] text-gray-600 text-center">
-                  💡 Click any phrase to fill the text box then hit Add
+                  💡 Click any phrase to fill the text box → hit Add. Or say it into the mic.
                 </p>
               </div>
             )}
@@ -447,10 +417,7 @@ const BudgetAssistant = () => {
             ) : (
               <div className="space-y-2">
                 {transactions.map((tx) => (
-                  <div
-                    key={tx._id}
-                    className="flex items-center justify-between border-b border-yellow-900 pb-2 last:border-0"
-                  >
+                  <div key={tx._id} className="flex items-center justify-between border-b border-yellow-900 pb-2 last:border-0">
                     <div>
                       <p className="text-yellow-400 font-medium">
                         {typeLabel[tx.type]} · ₹{Number(tx.amount).toLocaleString("en-IN")}

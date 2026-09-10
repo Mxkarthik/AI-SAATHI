@@ -11,6 +11,7 @@ const messageRoutes = require("./routes/messageRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const authRoutes = require("./auth/authRoutes");
 const newsRoutes = require("./routes/newsRoutes");
+const loanRoutes = require("./routes/loanRoutes");
 const voiceRoutes = require("./voice/voiceRoutes");
 
 const app = express();
@@ -58,6 +59,7 @@ app.use(
 );
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/news", newsRoutes);
+app.use("/api/loans", loanRoutes);
 app.use("/api/voice", voiceRoutes);
 
 module.exports = app;
