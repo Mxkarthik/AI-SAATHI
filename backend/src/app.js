@@ -11,6 +11,7 @@ const messageRoutes = require("./routes/messageRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
 const authRoutes = require("./auth/authRoutes");
 const newsRoutes = require("./routes/newsRoutes");
+const loanRoutes = require("./routes/loanRoutes");
 
 const app = express();
 
@@ -57,5 +58,6 @@ app.use(
 );
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/news", newsRoutes);
+app.use("/api/loans", loanRoutes);
 
 module.exports = app;
