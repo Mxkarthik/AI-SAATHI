@@ -10,11 +10,12 @@ import CurrentMessage from "./CurrentMessage";
 import MessageComposer from "./MessageComposer";
 import RecommendationPanel from "./RecommendationPanel";
 import SituationPanel from "./SituationPanel";
-import SarvamTtsTester from "./SarvamTtsTester";
 import TranscriptPreview from "./TranscriptPreview";
 import UserParticipant from "./UserParticipant";
 
-export default function CallInterface({ user, conversationId, onLeave }) {
+const TELUGU_WELCOME = "నమస్కారం! నేను AI సాథి. మీ ఆర్థిక అవసరాలను అర్థం చేసుకోవడానికి నేను మీకు సహాయం చేస్తాను.";
+
+export default function CallInterface({ user, conversationId, welcomeInTelugu = false, onLeave }) {
   const { t, language } = useLanguage();
   const [aiState, setAiState] = useState("ready");
   const [duration, setDuration] = useState(0);
@@ -24,22 +25,44 @@ export default function CallInterface({ user, conversationId, onLeave }) {
   const [currentLanguage, setCurrentLanguage] = useState(language);
   const [loadingConversation, setLoadingConversation] = useState(true);
   const [error, setError] = useState("");
+  const [voiceState, setVoiceState] = useState("idle");
+  const [voiceError, setVoiceError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const handleTtsStatus = useCallback((status) => {
-    if (status === "generating") setAiState("thinking");
-    else if (status === "playing") setAiState("speaking");
-    else if (status === "finished") setAiState("ready");
-    else if (status === "error") setAiState("error");
-  }, []);
-  const { error: ttsError, speak, stopSpeaking } = useSarvamTts({ onStatusChange: handleTtsStatus });
   const handleVoiceStatus = useCallback((status) => {
-    if (status === "recording") setAiState("listening");
-    else if (status === "transcribing") setAiState("thinking");
-    else if (status === "error") setAiState("error");
-    else if (status === "idle") setAiState("ready");
+    if (status === "recording") {
+      setVoiceError("");
+      setVoiceState("listening");
+      setAiState("listening");
+    } else if (status === "transcribing") {
+      setVoiceState("transcribing");
+      setAiState("transcribing");
+    } else if (status === "error") {
+      setVoiceState("error");
+      setAiState("error");
+    } else if (status === "idle") {
+      setVoiceState("idle");
+      setAiState("ready");
+    }
   }, []);
 
-  const handleSend = useCallback(async (content, restoreMessage, messageLanguage = currentLanguage) => {
+  const handleTtsStatus = useCallback((status) => {
+    if (status === "generating") {
+      stopRecording();
+      setVoiceState("thinking");
+      setAiState("thinking");
+    } else if (status === "playing") {
+      stopRecording();
+      setVoiceState("speaking");
+      setAiState("speaking");
+    } else if (status === "finished" || status === "error") {
+      setVoiceState("idle");
+      setAiState("ready");
+    }
+  }, []);
+
+  const { error: ttsError, speak, stopSpeaking, unlockPlayback } = useSarvamTts({ onStatusChange: handleTtsStatus });
+
+  const handleSend = useCallback(async (content, restoreMessage, messageLanguage = currentLanguage, fromVoice = false) => {
     if (submitting) return;
     const transcript = content.trim();
     if (!transcript) return;
@@ -47,6 +70,10 @@ export default function CallInterface({ user, conversationId, onLeave }) {
     setSubmitting(true);
     setError("");
     setAiState("thinking");
+    if (fromVoice) {
+      setVoiceError("");
+      setVoiceState("thinking");
+    }
     console.log("[AI-SAATHI] Sending transcript to backend:", transcript);
 
     try {
@@ -54,7 +81,7 @@ export default function CallInterface({ user, conversationId, onLeave }) {
         content: transcript,
         language: messageLanguage,
       });
-      const result = response?.data;
+      const result = response?.data || response;
       if (!result?.orchestration || !result.userMessage || !result.assistantMessage) {
         throw new Error("The backend returned an incomplete response. Please try again.");
       }
@@ -66,16 +93,25 @@ export default function CallInterface({ user, conversationId, onLeave }) {
       if (result.orchestration.language === "en" || result.orchestration.language === "te") {
         setCurrentLanguage(result.orchestration.language);
       }
-      void speak(
-        result.assistantMessage.content,
-        result.orchestration.language || result.assistantMessage.language || currentLanguage,
-      );
+      if (fromVoice) {
+        await speak(
+          result.assistantMessage.content,
+          result.orchestration.language || result.assistantMessage.language || currentLanguage,
+        );
+      }
     } catch (sendError) {
       restoreMessage?.();
-      setError(sendError.message || "Unable to process your message. Please try again.");
-      setAiState("error");
+      if (fromVoice) {
+        setError(sendError.message || "Unable to process your message. Please try again.");
+        setVoiceState("error");
+        setAiState("error");
+      } else {
+        setError(sendError.message || "Unable to process your message. Please try again.");
+        setAiState("error");
+      }
     } finally {
       setSubmitting(false);
+      if (!fromVoice) setAiState("ready");
     }
   }, [conversationId, currentLanguage, speak, submitting]);
 
@@ -87,7 +123,7 @@ export default function CallInterface({ user, conversationId, onLeave }) {
         ? "en"
         : currentLanguage;
     setCurrentLanguage(detectedLanguage);
-    handleSend(transcript, undefined, detectedLanguage);
+    return handleSend(transcript, undefined, detectedLanguage, true);
   }, [currentLanguage, handleSend]);
 
   const {
@@ -96,6 +132,8 @@ export default function CallInterface({ user, conversationId, onLeave }) {
     startRecording,
     stopRecording,
   } = useSarvamRecorder({ onTranscript: handleVoiceTranscript, onStatusChange: handleVoiceStatus });
+
+  const microphoneLocked = loadingConversation || submitting || ["transcribing", "thinking", "speaking"].includes(voiceState);
 
   useEffect(() => {
     const timer = window.setInterval(() => setDuration((value) => value + 1), 1000);
@@ -113,7 +151,20 @@ export default function CallInterface({ user, conversationId, onLeave }) {
           getMessages(conversationId),
         ]);
         if (!active) return;
-        setMessages(Array.isArray(messagesResult.messages) ? messagesResult.messages : []);
+        const loadedMessages = Array.isArray(messagesResult.messages) ? messagesResult.messages : [];
+        if (welcomeInTelugu && loadedMessages.length === 0) {
+          const welcomeMessage = {
+            _id: `welcome-${conversationId}`,
+            role: "assistant",
+            content: TELUGU_WELCOME,
+            language: "te",
+          };
+          setMessages([welcomeMessage]);
+          setCurrentLanguage("te");
+          await speak(TELUGU_WELCOME, "te-IN");
+        } else {
+          setMessages(loadedMessages);
+        }
       } catch (loadError) {
         if (active) setError(loadError.message);
       } finally {
@@ -122,19 +173,24 @@ export default function CallInterface({ user, conversationId, onLeave }) {
     }
     loadConversation();
     return () => { active = false; };
-  }, [conversationId, language]);
+  }, [conversationId, language, speak, welcomeInTelugu]);
 
   const isReadyForDecision = orchestration?.conversationState?.stage === "ready_for_decision"
     && orchestration?.decisionContext?.status === "ready";
-  const activeQuestion = orchestration?.status === "needs_information"
-    ? orchestration.nextQuestion?.question || ""
-    : "";
+  const activeQuestion = orchestration?.nextQuestion?.question || "";
   const recommendation = isReadyForDecision ? orchestration?.recommendation : null;
 
   useEffect(() => {
     if (recorderError) setError(recorderError);
-    if (ttsError) setError(ttsError);
-  }, [recorderError, ttsError]);
+    if (recorderError) setVoiceState("idle");
+  }, [recorderError]);
+
+  useEffect(() => {
+    if (ttsError) {
+      setVoiceError("Voice playback unavailable. You can continue with text.");
+      setVoiceState("idle");
+    }
+  }, [ttsError]);
 
   return (
     <div className="relative min-h-full overflow-hidden bg-gray-950 text-white">
@@ -154,7 +210,6 @@ export default function CallInterface({ user, conversationId, onLeave }) {
           ready={isReadyForDecision}
         />
         <MessageComposer disabled={loadingConversation || submitting} onSend={handleSend} />
-        <SarvamTtsTester />
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.6fr)]">
           <SituationPanel
             context={orchestration?.context}
@@ -169,14 +224,23 @@ export default function CallInterface({ user, conversationId, onLeave }) {
             isMuted={false}
             voiceStatus="disconnected"
             recorderStatus={recorderStatus}
+            voiceState={voiceState}
+            disabled={microphoneLocked}
             onToggleMute={() => {}}
-            onStartVoice={startRecording}
+            onStartVoice={() => {
+              unlockPlayback();
+              startRecording();
+            }}
             onStopVoice={stopRecording}
-            onLeave={() => { stopSpeaking(); onLeave(); }}
+            onLeave={() => {
+              stopRecording();
+              stopSpeaking();
+              onLeave();
+            }}
             onSettings={() => setSettingsOpen((value) => !value)}
           />
           <p className="min-h-5 text-center text-xs text-gray-500" aria-live="polite">
-            {settingsOpen ? t("schemeAI", "settingsComingSoon") : t("schemeAI", "localPreview")}
+            {settingsOpen ? t("schemeAI", "settingsComingSoon") : voiceError || t("schemeAI", "localPreview")}
           </p>
         </div>
       </main>

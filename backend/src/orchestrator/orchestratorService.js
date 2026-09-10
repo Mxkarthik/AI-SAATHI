@@ -206,6 +206,7 @@ async function orchestrate(params) {
       {
         lastAskedField:     lastAskedField || null,
         conversationIntent: conversation.intent || null,
+          conversationLanguage: conversation.language || null,
       }
     );
   } catch (err) {

@@ -149,7 +149,23 @@ async function main() {
   assert("D2: fallback — provider = 'fallback'",
     resultD2.provider === "fallback");
 
-  // D3: Provider returns invalid shape → fallback
+  // D3: A Telugu answer to the amount question must advance even when the
+  // provider omits the amount or is unavailable.
+  const resultD3Amount = await withProviderStub(
+    async () => ({
+      language: "te",
+      intent: "crop_financing",
+      entities: { amount: null },
+    }),
+    async () => {
+      const { understandMessage: um } = require("./understandingService");
+      return um("నాకు యాభై వేల రూపాయలు కావాలి", { lastAskedField: "amount" });
+    }
+  );
+  assert("D3 amount answer: Telugu phrase extracted as 50000",
+    resultD3Amount.entities.amount === 50000, resultD3Amount.entities);
+
+  // D4: Provider returns invalid shape → fallback
   const resultD3 = await withProviderStub(
     async () => ({ badShape: true }),   // missing language/intent/entities
     async () => {
@@ -158,7 +174,7 @@ async function main() {
     }
   );
   console.log("  D3 invalid shape result:", JSON.stringify(resultD3));
-  assert("D3: invalid shape → fallback provider",
+  assert("D4: invalid shape → fallback provider",
     resultD3.provider === "fallback", resultD3.provider);
 
   // ── TEST E: Normalisation unit tests ────────────────────────────────────────

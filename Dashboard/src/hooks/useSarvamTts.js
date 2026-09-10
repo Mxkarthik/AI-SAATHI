@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { synthesizeSpeech } from "../services/voiceTtsApi";
 
 const LANGUAGE_CODES = { en: "en-IN", te: "te-IN" };
+const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
 
 export function useSarvamTts({ onStatusChange } = {}) {
   const audioRef = useRef(null);
   const objectUrlRef = useRef(null);
+  const playbackUnlockedRef = useRef(false);
   const onStatusChangeRef = useRef(onStatusChange);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -36,6 +38,20 @@ export function useSarvamTts({ onStatusChange } = {}) {
     cleanupAudio();
     updateStatus("idle");
   }, [cleanupAudio, updateStatus]);
+
+  const unlockPlayback = useCallback(() => {
+    if (playbackUnlockedRef.current || typeof Audio === "undefined") return;
+
+    const silentAudio = new Audio(SILENT_WAV);
+    silentAudio.muted = true;
+    const unlock = silentAudio.play();
+    unlock?.then(() => {
+      playbackUnlockedRef.current = true;
+      silentAudio.pause();
+      silentAudio.removeAttribute("src");
+      silentAudio.load();
+    }).catch(() => {});
+  }, []);
 
   const speak = useCallback(async (text, language) => {
     if (!text?.trim()) return false;
@@ -74,5 +90,5 @@ export function useSarvamTts({ onStatusChange } = {}) {
 
   useEffect(() => () => cleanupAudio(), [cleanupAudio]);
 
-  return { status, error, speak, stopSpeaking };
+  return { status, error, speak, stopSpeaking, unlockPlayback };
 }

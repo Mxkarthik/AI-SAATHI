@@ -3,6 +3,7 @@ import { useLanguage } from "../../i18n/LanguageContext";
 const STATUS_KEYS = {
   ready: "callReady",
   listening: "callListening",
+  transcribing: "transcribing",
   thinking: "callThinking",
   speaking: "callSpeaking",
   error: "callError",
@@ -10,7 +11,7 @@ const STATUS_KEYS = {
 
 export default function CallStatus({ status = "ready" }) {
   const { t } = useLanguage();
-  const isThinking = status === "thinking";
+  const isThinking = status === "thinking" || status === "transcribing";
   const isError = status === "error";
 
   return (

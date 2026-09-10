@@ -13,6 +13,7 @@ export default function SchemeAI() {
   const initialConversationId = searchParams.get("conversationId") || "";
   const [hasJoined, setHasJoined] = useState(Boolean(initialConversationId));
   const [conversationId, setConversationId] = useState(initialConversationId);
+  const [welcomeInTelugu, setWelcomeInTelugu] = useState(false);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState("");
   const welcomeName = user?.name?.trim() || null;
@@ -21,9 +22,11 @@ export default function SchemeAI() {
     return <CallInterface
       user={user}
       conversationId={conversationId}
+      welcomeInTelugu={welcomeInTelugu}
       onLeave={() => {
         setHasJoined(false);
         setConversationId("");
+        setWelcomeInTelugu(false);
         setSearchParams({}, { replace: true });
       }}
     />;
@@ -38,6 +41,7 @@ export default function SchemeAI() {
       const id = response?.conversation?._id || response?.conversation?.id;
       if (!id) throw new Error(t("schemeAI", "conversationCreateError"));
       setConversationId(id);
+      setWelcomeInTelugu(true);
       setSearchParams({ conversationId: id }, { replace: true });
       setHasJoined(true);
     } catch (error) {

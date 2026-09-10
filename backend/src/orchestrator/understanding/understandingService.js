@@ -51,6 +51,58 @@ function detectLanguageFallback(message) {
   return (teluguChars && teluguChars.length > 0) ? "te" : "en";
 }
 
+function inferIntentFallback(message, conversationIntent) {
+  if (conversationIntent && conversationIntent !== "general_financial_guidance") {
+    return conversationIntent;
+  }
+
+  if (/[\u0C00-\u0C7F]/.test(message) && /(వ్యవసాయ|పంట|డబ్బు|రుణ|లోన్)/.test(message)) {
+    return "crop_financing";
+  }
+  return "general_financial_guidance";
+}
+
+function extractAmountFallback(message) {
+  const normalized = message.toLowerCase().replace(/[₹,]/g, " ").trim();
+
+  const teluguAmounts = [
+    [/యాభై\s*వేల(?:ు)?/, 50000],
+    [/ఒక\s*లక్ష/, 100000],
+    [/రెండు\s*లక్షలు?/, 200000],
+    [/మూడు\s*లక్షలు?/, 300000],
+  ];
+  for (const [pattern, amount] of teluguAmounts) {
+    if (pattern.test(message)) return amount;
+  }
+
+  const lakhMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|లక్ష)/i);
+  if (lakhMatch) return Number(lakhMatch[1]) * 100000;
+
+  const thousandMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(?:thousand|వేలు)/i);
+  if (thousandMatch) return Number(thousandMatch[1]) * 1000;
+
+  const numberMatch = normalized.match(/\b\d+(?:\.\d+)?\b/);
+  return numberMatch ? Number(numberMatch[0]) : null;
+}
+
+function extractAskedFieldFallback(message, lastAskedField) {
+  if (lastAskedField === "amount") {
+    const amount = extractAmountFallback(message);
+    return amount !== null ? { amount } : {};
+  }
+
+  if (lastAskedField !== "season") return {};
+
+  const normalized = message.toLowerCase();
+  if (/(ఖరీఫ్|kharif|kharif)/i.test(message)) return { season: "kharif" };
+  if (/(రబీ|rabi)/i.test(message)) return { season: "rabi" };
+  if (/(జైద్|zaid)/i.test(message)) return { season: "zaid" };
+
+  // The assistant has already identified the field being answered. Preserve
+  // a non-empty short answer so the information gap can advance.
+  return normalized.trim() ? { season: message.trim() } : {};
+}
+
 // ─── Value normalisation ──────────────────────────────────────────────────────
 
 /**
@@ -157,11 +209,22 @@ async function understandMessage(message, context = {}) {
       );
     }
 
-    const normalisedEntities = normaliseEntities(raw.entities);
+    const normalisedEntities = {
+      ...extractAskedFieldFallback(cleanMessage, context.lastAskedField),
+      ...normaliseEntities(raw.entities),
+    };
+    const inferredIntent = inferIntentFallback(cleanMessage, context.conversationIntent);
+    const resolvedIntent = raw.intent === "general_financial_guidance"
+      ? inferredIntent
+      : raw.intent;
+    const resolvedLanguage = raw.intent === "general_financial_guidance"
+      && context.conversationLanguage === "te"
+      ? "te"
+      : raw.language;
 
     return {
-      language:   raw.language,
-      intent:     raw.intent,
+      language:   resolvedLanguage,
+      intent:     resolvedIntent,
       entities:   normalisedEntities,
       confidence: raw.confidence || { intent: 0, entities: 0 },
       provider:   providerName,
@@ -175,12 +238,16 @@ async function understandMessage(message, context = {}) {
       `[understandingService] Provider "${providerName}" failed: ${providerError.message}`
     );
 
-    const fallbackLanguage = detectLanguageFallback(cleanMessage);
+    const fallbackLanguage = detectLanguageFallback(cleanMessage) === "te"
+      ? "te"
+      : context.conversationLanguage === "te"
+        ? "te"
+        : "en";
 
     return {
       language:   fallbackLanguage,
-      intent:     "general_financial_guidance",
-      entities:   {},
+      intent:     inferIntentFallback(cleanMessage, context.conversationIntent),
+      entities:   extractAskedFieldFallback(cleanMessage, context.lastAskedField),
       confidence: { intent: 0, entities: 0 },
       provider:   "fallback",
     };
