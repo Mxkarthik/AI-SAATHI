@@ -7,6 +7,7 @@ const router = express.Router();
 // NOTE: static paths (/voice, /summary, etc.) must be declared before the
 // /:id route, otherwise Express will treat "summary" etc. as an :id value.
 
+router.post("/preview", authMiddleware, transactionController.previewFromVoice);
 router.post("/voice", authMiddleware, transactionController.createFromVoice);
 
 router.get("/summary", authMiddleware, transactionController.getSummary);

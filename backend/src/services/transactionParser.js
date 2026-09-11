@@ -9,103 +9,7 @@
  * only depend on parseTransactionText().
  */
 
-// ---------------------------------------------------------------------------
-// Word-number support ("five hundred", "two thousand") — best-effort only.
-// ---------------------------------------------------------------------------
-const SMALL_NUMBERS = {
-  zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7,
-  eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13,
-  fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18,
-  nineteen: 19,
-};
-const TENS = {
-  twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70,
-  eighty: 80, ninety: 90,
-};
-const MULTIPLIERS = {
-  hundred: 100, thousand: 1000,
-  lakh: 100000, lac: 100000, lakhs: 100000,
-  // Telugu
-  "లక్ష": 100000, "లక్షలు": 100000,
-  "వేల": 1000, "వేలు": 1000,
-  "కోటి": 10000000,
-  // Hindi
-  "लाख": 100000, "लाखों": 100000,
-  "हज़ार": 1000, "हजार": 1000,
-  "करोड़": 10000000, "करोड": 10000000,
-  crore: 10000000,
-};
-
-function wordsToNumber(text) {
-  const tokens = text
-    .toLowerCase()
-    .replace(/-/g, " ")
-    .split(/\s+/)
-    .filter(Boolean);
-
-  let total = 0;
-  let current = 0;
-  let matchedAny = false;
-
-  for (const token of tokens) {
-    if (token in SMALL_NUMBERS) {
-      current += SMALL_NUMBERS[token];
-      matchedAny = true;
-    } else if (token in TENS) {
-      current += TENS[token];
-      matchedAny = true;
-    } else if (token in MULTIPLIERS) {
-      const mult = MULTIPLIERS[token];
-      current = (current === 0 ? 1 : current) * mult;
-      if (mult >= 1000) {
-        total += current;
-        current = 0;
-      }
-      matchedAny = true;
-    } else if (token === "and") {
-      // skip filler
-    }
-  }
-
-  if (!matchedAny) return null;
-  return total + current;
-}
-
-// ---------------------------------------------------------------------------
-// Amount extraction
-// ---------------------------------------------------------------------------
-function extractAmount(text) {
-  // Build a regex that matches any multiplier word (English + Telugu + Hindi)
-  const multiplierPattern = Object.keys(MULTIPLIERS)
-    .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-    .join("|");
-
-  // "5 lakh", "2 లక్షలు", "3 लाख" etc.
-  const scaleRegex = new RegExp(
-    `(\\d+(?:\\.\\d+)?)\\s*(${multiplierPattern})\\b`,
-    "u"
-  );
-  const scaleMatch = text.match(scaleRegex);
-  if (scaleMatch) {
-    const base = parseFloat(scaleMatch[1]);
-    const multiplier = MULTIPLIERS[scaleMatch[2]];
-    if (!isNaN(base) && multiplier) return base * multiplier;
-  }
-
-  // Plain digits: 250, 15,000, 1500.50, ₹350, Rs.500
-  const digitMatch = text.match(/\d[\d,]*(?:\.\d+)?/);
-  if (digitMatch) {
-    const cleaned = digitMatch[0].replace(/,/g, "");
-    const value = parseFloat(cleaned);
-    if (!isNaN(value) && value > 0) return value;
-  }
-
-  // Spoken English numbers: "five hundred", "two thousand"
-  const wordValue = wordsToNumber(text);
-  if (wordValue && wordValue > 0) return wordValue;
-
-  return null;
-}
+const { parseMoney } = require("./moneyNormalizer");
 
 // ---------------------------------------------------------------------------
 // Type detection
@@ -268,8 +172,8 @@ function parseTransactionText(rawText) {
 
   const lowerText = sourceText.toLowerCase();
 
-  const amount = extractAmount(lowerText);
-  if (!amount) {
+  const money = parseMoney(lowerText);
+  if (money.value === null) {
     return { success: false, message: "Please tell me the amount." };
   }
 
@@ -300,7 +204,10 @@ function parseTransactionText(rawText) {
     success: true,
     data: {
       type,
-      amount,
+      amount: money.value,
+      currency: money.currency,
+      amountConfidence: money.confidence,
+      amountSource: money.source,
       category,
       description,
       sourceText,

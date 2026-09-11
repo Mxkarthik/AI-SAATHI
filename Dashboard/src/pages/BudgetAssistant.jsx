@@ -1,12 +1,14 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Pencil, Mic, MicOff, Trash2, Send, ChevronDown, ChevronUp } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useAuth } from "../hooks/useAuth";
+import { useSarvamRecorder } from "../hooks/useSarvamRecorder";
 import {
   getSummary,
   getTransactions,
   createTransactionFromVoice,
+  previewTransactionFromVoice,
   deleteTransaction,
 } from "../utils/transactionApi";
 import SpendingAnalyzer from "../components/SpendingAnalyzer";
@@ -86,10 +88,12 @@ const BudgetAssistant = () => {
   const [transactions, setTransactions] = useState([]);
   const [analyzerKey, setAnalyzerKey]   = useState(0);
 
-  const [recording, setRecording]         = useState(false);
   const [status, setStatus]               = useState("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const [lastHeard, setLastHeard]         = useState("");
+  const [voiceError, setVoiceError]       = useState("");
+  const [voiceLanguage, setVoiceLanguage] = useState("");
+  const [transactionPreview, setTransactionPreview] = useState(null);
 
   const [manualText, setManualText] = useState("");
   const [guideTab, setGuideTab]     = useState("en-IN");
@@ -97,9 +101,6 @@ const BudgetAssistant = () => {
 
   const [showExpenseHistory, setShowExpenseHistory] = useState(false);
   const [showEarningHistory, setShowEarningHistory] = useState(false);
-
-  // Web Speech API ref
-  const recognitionRef = useRef(null);
 
   const { totalExpenses, totalEarnings, totalSavings, netBalance } = summary;
 
@@ -124,7 +125,7 @@ const BudgetAssistant = () => {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // ── Handle transcript (voice or text) ─────────────────────────────────
+  // ── Handle typed transaction submission ────────────────────────────────
   const handleTranscript = useCallback(async (text) => {
     if (!text?.trim()) return;
     setStatus("processing");
@@ -140,81 +141,48 @@ const BudgetAssistant = () => {
     }
   }, [loadAll]);
 
-  // ── Web Speech API: start / stop ───────────────────────────────────────
-  const startRecording = () => {
-    if (recording) return;
-
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      setStatus("error");
-      setStatusMessage("Voice input not supported in this browser. Use the text box.");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.continuous      = false;
-    recognition.interimResults  = true;
-    recognition.lang            = "en-IN"; // browser picks up multilingual input naturally
-
-    recognition.onstart = () => {
-      setRecording(true);
-      setStatus("listening");
-      setStatusMessage("🎙️ Listening… speak in any language");
+  const handleVoiceStatus = useCallback((nextStatus) => {
+    if (nextStatus === "recording") {
+      setVoiceError("");
       setLastHeard("");
-    };
+      setTransactionPreview(null);
+    }
+  }, []);
 
-    recognition.onresult = (event) => {
-      const transcript = Array.from(event.results)
-        .map((r) => r[0].transcript)
-        .join("");
-      setLastHeard(transcript);
-      setStatus("processing");
-      setStatusMessage(`Heard: "${transcript}"`);
-    };
-
-    recognition.onerror = (event) => {
-      setRecording(false);
-      setStatus("error");
-      if (event.error === "not-allowed" || event.error === "permission-denied") {
-        setStatusMessage("Microphone blocked — allow mic access in browser settings.");
+  const handleVoiceTranscript = useCallback(async (transcript, languageCode) => {
+    const normalizedLanguage = languageCode?.toLowerCase();
+    const detectedLanguage = normalizedLanguage === "te-in"
+      ? "te"
+      : normalizedLanguage === "en-in"
+        ? "en"
+        : "";
+    setManualText(transcript);
+    setLastHeard(transcript);
+    setVoiceLanguage(detectedLanguage);
+    setVoiceError("");
+    try {
+      const result = await previewTransactionFromVoice(transcript);
+      if (result.success) {
+        setTransactionPreview({ ...result.parsed, transcript });
       } else {
-        setStatusMessage("Mic error. Use the text box instead.");
+        setTransactionPreview({ needsClarification: true, message: result.message, transcript });
       }
-      console.error("Speech recognition error:", event.error);
-    };
+    } catch (previewError) {
+      setTransactionPreview(null);
+      setVoiceError(previewError.message || "Unable to understand that transaction. Please try again.");
+    }
+  }, []);
 
-    recognition.onend = () => {
-      setRecording(false);
-      const finalText = recognitionRef.current?._lastTranscript;
-      if (finalText?.trim()) {
-        handleTranscript(finalText.trim());
-      } else {
-        setStatus("error");
-        setStatusMessage("Nothing detected. Please try again or use the text box.");
-      }
-    };
+  const {
+    status: recorderStatus,
+    error: recorderError,
+    startRecording,
+    stopRecording,
+  } = useSarvamRecorder({ onTranscript: handleVoiceTranscript, onStatusChange: handleVoiceStatus });
 
-    // Store last transcript so onend can access it
-    const originalOnResult = recognition.onresult;
-    recognition.onresult = (event) => {
-      originalOnResult(event);
-      recognition._lastTranscript = Array.from(event.results)
-        .map((r) => r[0].transcript)
-        .join("");
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-  };
-
-  const stopRecording = () => {
-    recognitionRef.current?.stop();
-    setRecording(false);
-    setStatus("idle");
-    setStatusMessage("");
-  };
+  useEffect(() => {
+    if (recorderError) setVoiceError("Voice transcription unavailable. Please try again.");
+  }, [recorderError]);
 
   // ── Manual text submit ─────────────────────────────────────────────────
   const handleManualSubmit = async (e) => {
@@ -247,6 +215,10 @@ const BudgetAssistant = () => {
     : "text-yellow-200";
 
   const activeGuide = VOICE_EXAMPLES[guideTab];
+  const isRecording = recorderStatus === "recording";
+  const isTranscribing = recorderStatus === "transcribing";
+  const voiceStatusMessage = voiceError
+    || (isRecording ? "Listening..." : isTranscribing ? "Transcribing..." : "");
 
   return (
     <div className="min-h-screen bg-black text-yellow-400 p-6">
@@ -285,26 +257,35 @@ const BudgetAssistant = () => {
               {/* MIC BUTTON */}
               <div className="flex flex-col items-center gap-2">
                 <button
-                  onClick={recording ? stopRecording : startRecording}
+                  onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isTranscribing}
+                  aria-label={isRecording ? "Stop recording" : "Start recording"}
                   className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-xl text-black ${
-                    recording
+                    isRecording
                       ? "bg-red-500 hover:bg-red-400 animate-pulse scale-110"
-                      : "bg-yellow-400 hover:bg-yellow-300"
+                      : isTranscribing
+                        ? "bg-gray-500 cursor-not-allowed"
+                        : "bg-yellow-400 hover:bg-yellow-300"
                   }`}
                 >
-                  {recording ? <MicOff size={24} /> : <Mic size={24} />}
+                  {isRecording ? <MicOff size={24} /> : <Mic size={24} />}
                 </button>
                 <p className="text-[10px] text-gray-500 text-center">
-                  {recording ? "Tap to stop" : "Tap & speak"}
+                  {isRecording ? "Tap to stop" : isTranscribing ? "Please wait" : "Tap & speak"}
                 </p>
-                {status !== "idle" && statusMessage && (
-                  <p className={`text-[10px] text-center max-w-[9rem] leading-tight ${statusColor}`}>
-                    {statusMessage}
+                {voiceStatusMessage && (
+                  <p className={`text-[10px] text-center max-w-[9rem] leading-tight ${voiceError ? "text-red-400" : "text-blue-300 animate-pulse"}`} role={voiceError ? "alert" : undefined}>
+                    {voiceStatusMessage}
                   </p>
                 )}
-                {lastHeard && !recording && (
-                  <p className="text-[9px] text-gray-500 italic text-center max-w-[9rem] truncate">
+                {lastHeard && !isRecording && (
+                  <p className="text-[9px] text-yellow-200 italic text-center max-w-[9rem] truncate" title={lastHeard}>
                     "{lastHeard}"
+                  </p>
+                )}
+                {voiceLanguage && lastHeard && !isRecording && (
+                  <p className="text-[9px] text-gray-500 text-center">
+                    {voiceLanguage === "te" ? "Telugu" : "English"} transcript
                   </p>
                 )}
               </div>
@@ -337,6 +318,25 @@ const BudgetAssistant = () => {
               <p className="text-xs text-center text-yellow-200">
                 Savings set aside: ₹ {totalSavings.toLocaleString("en-IN")}
               </p>
+            )}
+
+            {transactionPreview && (
+              <div className="border border-yellow-700 bg-yellow-400/10 rounded-lg px-4 py-3 text-sm" role="status">
+                {transactionPreview.needsClarification ? (
+                  <>
+                    <p className="font-semibold text-yellow-200">Amount missing</p>
+                    <p className="mt-1 text-xs text-yellow-100/80">{transactionPreview.message}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-yellow-200">Transaction detected</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                      <span>Type: <strong className="capitalize">{transactionPreview.type}</strong></span>
+                      <span>Amount: <strong>₹{Number(transactionPreview.amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong></span>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
 
             {/* Text input fallback */}

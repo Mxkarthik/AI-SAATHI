@@ -47,6 +47,28 @@ const createFromVoice = async (req, res) => {
 };
 
 /**
+ * POST /api/transactions/preview
+ * Parses a transcript without persisting a transaction.
+ */
+const previewFromVoice = async (req, res) => {
+  if (!req.userId) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const { text } = req.body || {};
+  if (!text || typeof text !== "string" || !text.trim()) {
+    return res.status(400).json({ success: false, message: "Empty speech transcript." });
+  }
+
+  const parsed = parseTransactionText(text);
+  if (!parsed.success) {
+    return res.status(200).json({ success: false, needsClarification: true, message: parsed.message });
+  }
+
+  return res.status(200).json({ success: true, needsClarification: false, parsed: parsed.data });
+};
+
+/**
  * POST /api/transactions
  * Body: { type, amount, category?, description?, sourceText?, date? }
  * Direct structured create (manual entry / editing tools).
@@ -303,6 +325,7 @@ const deleteTransaction = async (req, res) => {
 
 module.exports = {
   createFromVoice,
+  previewFromVoice,
   createTransaction,
   getTransactions,
   getSummary,

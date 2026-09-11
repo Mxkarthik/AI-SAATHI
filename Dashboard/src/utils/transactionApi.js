@@ -46,6 +46,12 @@ export const createTransactionFromVoice = (text) =>
     body: JSON.stringify({ text }),
   });
 
+export const previewTransactionFromVoice = (text) =>
+  request("/api/transactions/preview", {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+
 export const deleteTransaction = (id) =>
   request(`/api/transactions/${id}`, { method: "DELETE" });
 

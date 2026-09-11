@@ -22,12 +22,12 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
   const location = useLocation();
 
   const menuItems = [
+    { name: "Scheme AI",            label: t("sidebar.nav", "schemeAI"),            icon: Bot,          path: "/scheme-ai", featured: true },
     { name: "Financial News",       label: t("sidebar.nav", "financialNews"),       icon: Newspaper,    path: "/" },
     { name: "Budget Assistant",     label: t("sidebar.nav", "budgetAssistant"),     icon: Wallet,       path: "/budget-assistant" },
     { name: "Loan Assistant",       label: t("sidebar.nav", "loanAssistant"),       icon: Banknote,     path: "/loan-assistant" },
     { name: "Investment Assistant", label: t("sidebar.nav", "investmentAssistant"), icon: TrendingUp,   path: "/investment-assistant" },
     { name: "Community",            label: t("sidebar.nav", "community"),           icon: Users,        path: "/community" },
-    { name: "Scheme AI",            label: t("sidebar.nav", "schemeAI"),            icon: Bot,          path: "/scheme-ai" },
   ];
 
   // Close account popover when clicking outside
@@ -85,28 +85,52 @@ export default function Sidebar({ isOpen = false, onClose = () => {} }) {
           </button>
         </div>
 
-        {/* Nav menu — grows to fill available space */}
-        <div className="flex flex-col gap-2 p-4 flex-1">
+        {/* Nav menu — keeps the primary assistant first and grows to fill available space */}
+        <nav className="flex flex-col gap-2 p-4 flex-1" aria-label="Main navigation">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
-              <Link key={item.name} to={item.path}>
-                <button
-                  onClick={onClose}
-                  className={`w-full flex items-center gap-4 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    isActive
+              <Link
+                key={item.name}
+                to={item.path}
+                onClick={onClose}
+                aria-current={isActive ? "page" : undefined}
+                className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-xl px-4 py-3 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-400/70 focus:ring-offset-2 focus:ring-offset-gray-950 ${
+                  item.featured
+                    ? isActive
+                      ? "border border-yellow-300/60 bg-gradient-to-r from-yellow-400/20 to-orange-500/10 text-yellow-200 shadow-lg shadow-yellow-500/10"
+                      : "border border-yellow-400/25 bg-yellow-400/[0.07] text-yellow-100 hover:border-yellow-300/50 hover:bg-yellow-400/15"
+                    : isActive
                       ? "bg-gray-800 text-yellow-400"
-                      : "hover:bg-gray-800 hover:text-white"
-                  }`}
-                >
-                  <Icon size={22} />
-                  <span className="font-medium text-sm">{item.label}</span>
-                </button>
+                      : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                }`}
+              >
+                {item.featured && (
+                  <span className="absolute inset-y-2 left-0 w-1 rounded-r-full bg-yellow-400" aria-hidden="true" />
+                )}
+                <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
+                  item.featured
+                    ? "bg-yellow-400/15 text-yellow-300 group-hover:bg-yellow-400/25"
+                    : isActive
+                      ? "bg-yellow-400/10"
+                      : "bg-gray-900 text-gray-400 group-hover:text-white"
+                }`}>
+                  <Icon size={20} aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">{item.label}</span>
+                  {item.featured && (
+                    <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-[0.14em] text-yellow-400/75">
+                      Main feature
+                    </span>
+                  )}
+                </span>
+                {item.featured && <span className="text-lg leading-none text-yellow-300/70" aria-hidden="true">&#8594;</span>}
               </Link>
             );
           })}
-        </div>
+        </nav>
 
         {/* ── User account section (bottom) ───────────────── */}
         {user && (
