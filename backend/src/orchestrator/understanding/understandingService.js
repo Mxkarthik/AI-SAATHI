@@ -36,6 +36,7 @@
  */
 
 const { getProvider }  = require("./providers/providerManager");
+const { parseMoney } = require("../../services/moneyNormalizer");
 
 // ─── Telugu language detection (fallback only) ───────────────────────────────
 
@@ -63,32 +64,29 @@ function inferIntentFallback(message, conversationIntent) {
 }
 
 function extractAmountFallback(message) {
-  const normalized = message.toLowerCase().replace(/[₹,]/g, " ").trim();
-
-  const teluguAmounts = [
-    [/యాభై\s*వేల(?:ు)?/, 50000],
-    [/ఒక\s*లక్ష/, 100000],
-    [/రెండు\s*లక్షలు?/, 200000],
-    [/మూడు\s*లక్షలు?/, 300000],
-  ];
-  for (const [pattern, amount] of teluguAmounts) {
-    if (pattern.test(message)) return amount;
-  }
-
-  const lakhMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(?:lakh|lakhs|లక్ష)/i);
-  if (lakhMatch) return Number(lakhMatch[1]) * 100000;
-
-  const thousandMatch = normalized.match(/(\d+(?:\.\d+)?)\s*(?:thousand|వేలు)/i);
-  if (thousandMatch) return Number(thousandMatch[1]) * 1000;
-
-  const numberMatch = normalized.match(/\b\d+(?:\.\d+)?\b/);
-  return numberMatch ? Number(numberMatch[0]) : null;
+  const parsed = parseMoney(message);
+  return parsed.value;
 }
 
 function extractAskedFieldFallback(message, lastAskedField) {
   if (lastAskedField === "amount") {
     const amount = extractAmountFallback(message);
     return amount !== null ? { amount } : {};
+  }
+
+  if (lastAskedField === "existingDebt") {
+    const normalized = message.toLowerCase().replace(/[.,!?]/gu, " ").replace(/\s+/gu, " ").trim();
+    const negative = /(?:^|\s)(?:no|none|nil|no loans?|no debt|without (?:any )?(?:loans?|debt)|i (?:do not|don't|dont) have (?:any )?(?:existing )?(?:loans?|debt)|i have no (?:existing )?(?:loans?|debt))(?:\s|$)/u.test(normalized)
+      || /(?:లేదు|లేవు|ఏమీ లేదు|లోన్ లేదు|లోన్లు లేవు|అప్పు లేదు|అప్పులు లేవు|రుణం లేదు|రుణాలు లేవు)/u.test(message);
+    if (negative) return { existingDebt: false };
+
+    const positive = /(?:^|\s)(?:yes|yeah|yep|i have|there is|there are)(?:\s|$)/u.test(normalized)
+      || /(?:అవును|లోన్ ఉంది|లోన్లు ఉన్నాయి|అప్పు ఉంది|అప్పులు ఉన్నాయి|రుణం ఉంది|రుణాలు ఉన్నాయి)/u.test(message);
+    if (positive) {
+      const amount = extractAmountFallback(message);
+      return amount !== null ? { existingDebt: true, existingLoanAmount: amount } : { existingDebt: true };
+    }
+    return {};
   }
 
   if (lastAskedField !== "season") return {};
@@ -144,6 +142,13 @@ function normaliseEntities(entities) {
     if (value === null || value === undefined) continue;
 
     switch (key) {
+      case "amount": {
+        const normalised = typeof value === "number" && Number.isFinite(value)
+          ? value
+          : parseMoney(String(value)).value;
+        if (normalised !== null && normalised > 0) out.amount = normalised;
+        break;
+      }
       case "landUnit": {
         const normalised = LAND_UNIT_MAP[String(value).toLowerCase().trim()];
         if (normalised) out.landUnit = normalised;
@@ -209,9 +214,10 @@ async function understandMessage(message, context = {}) {
       );
     }
 
+    const contextualEntities = extractAskedFieldFallback(cleanMessage, context.lastAskedField);
     const normalisedEntities = {
-      ...extractAskedFieldFallback(cleanMessage, context.lastAskedField),
       ...normaliseEntities(raw.entities),
+      ...contextualEntities,
     };
     const inferredIntent = inferIntentFallback(cleanMessage, context.conversationIntent);
     const resolvedIntent = raw.intent === "general_financial_guidance"

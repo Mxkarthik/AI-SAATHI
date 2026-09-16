@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ArrowRight, Bot, CheckCircle2, Languages, LockKeyhole, Mic, Sparkles } from "lucide-react";
+import { ArrowRight, Bot, Languages, Sparkles } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useLanguage } from "../i18n/LanguageContext";
 import CallInterface from "../components/ai-saathi/CallInterface";
@@ -76,8 +76,8 @@ export default function SchemeAI() {
           </div>
         </header>
 
-        <main className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem]" aria-labelledby="scheme-ai-title">
-          <section className="relative flex min-h-[31rem] flex-col items-center justify-center overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/75 px-5 py-10 text-center shadow-2xl shadow-black/20 sm:min-h-[35rem] sm:px-10" aria-labelledby="preview-title">
+        <main aria-labelledby="scheme-ai-title">
+          <section className="relative mx-auto flex min-h-[31rem] max-w-5xl flex-col items-center justify-center overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/75 px-5 py-10 text-center shadow-2xl shadow-black/20 sm:min-h-[35rem] sm:px-10" aria-labelledby="preview-title">
             <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full border border-yellow-400/20 bg-yellow-400/5 px-3 py-1.5 text-xs font-semibold text-yellow-300">
               <span className="h-2 w-2 rounded-full bg-yellow-400 motion-safe:animate-pulse" aria-hidden="true" />
               {t("schemeAI", "ready")}
@@ -96,55 +96,29 @@ export default function SchemeAI() {
               {t("schemeAI", "description")}
             </p>
 
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-2 text-xs text-gray-400">
+            <p className="mt-6 max-w-lg text-sm leading-6 text-gray-300">
+              {t("schemeAI", "callPrompt")}
+            </p>
+            <button
+              type="button"
+              onClick={handleJoin}
+              disabled={joining}
+              aria-label={t("schemeAI", "joinCall")}
+              className="mt-5 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-yellow-400 px-8 py-3 text-sm font-bold text-gray-950 transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 focus:ring-offset-gray-950 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {joining ? t("schemeAI", "starting") : t("schemeAI", "joinCall")}
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <p className="mt-3 min-h-5 text-center text-xs text-red-300" aria-live="polite">
+              {joinError}
+            </p>
+
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-gray-400">
               <span className="rounded-full border border-gray-700 bg-gray-950/70 px-3 py-1.5">{t("schemeAI", "benefitSpeak")}</span>
               <span className="rounded-full border border-gray-700 bg-gray-950/70 px-3 py-1.5">{t("schemeAI", "benefitUnderstand")}</span>
               <span className="rounded-full border border-gray-700 bg-gray-950/70 px-3 py-1.5">{t("schemeAI", "benefitLanguage")}</span>
             </div>
           </section>
-
-          <aside className="flex flex-col gap-4">
-            <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-400/10 text-yellow-400">
-                  <Mic className="h-5 w-5" aria-hidden="true" />
-                </div>
-                <div>
-                  <h2 className="font-semibold text-white">{t("schemeAI", "microphone")}</h2>
-                  <p className="text-sm text-gray-400">{t("schemeAI", "microphoneReady")}</p>
-                </div>
-              </div>
-              <p className="mt-4 border-t border-gray-800 pt-4 text-xs leading-5 text-gray-500">
-                {t("schemeAI", "microphoneNote")}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-gray-800 bg-gray-900/80 p-5">
-              <div className="flex items-start gap-3">
-                <LockKeyhole className="mt-0.5 h-4 w-4 flex-shrink-0 text-yellow-400" aria-hidden="true" />
-                <div>
-                  <h2 className="font-semibold text-white">{t("schemeAI", "privacy")}</h2>
-                  <p className="mt-1 text-sm leading-6 text-gray-400">{t("schemeAI", "privacyNote")}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-auto rounded-2xl border border-yellow-400/20 bg-yellow-400/5 p-5">
-              <p className="text-sm leading-6 text-gray-300">{t("schemeAI", "callPrompt")}</p>
-              <button
-                type="button"
-                onClick={handleJoin}
-                disabled={joining}
-                className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-gray-950 transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 focus:ring-offset-gray-950 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {joining ? t("schemeAI", "starting") : t("schemeAI", "joinCall")}
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <p className="mt-3 min-h-5 text-center text-xs text-red-300" aria-live="polite">
-                {joinError}
-              </p>
-            </div>
-          </aside>
         </main>
       </div>
     </div>

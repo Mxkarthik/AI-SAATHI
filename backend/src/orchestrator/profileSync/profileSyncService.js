@@ -159,7 +159,9 @@ function deriveProfileSync({ userId, understanding, profile = null } = {}) {
   // the user provides a debt amount (including 0 for "no loans").
   // Only sync if existingDebt is explicitly present (non-null/undefined).
   if (entities.existingDebt !== null && entities.existingDebt !== undefined) {
-    const debtValue = nonNegativeNumber(entities.existingDebt);
+    const debtValue = entities.existingDebt === false
+      ? 0
+      : nonNegativeNumber(entities.existingDebt) ?? nonNegativeNumber(entities.existingLoanAmount);
     if (debtValue !== null) {
       const currentLoans = profile?.financial?.existingLoans || [];
       // Only add the record if no loans already exist at this amount

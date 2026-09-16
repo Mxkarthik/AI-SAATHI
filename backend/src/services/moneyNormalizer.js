@@ -47,6 +47,11 @@ function cleanTokens(text) {
 }
 
 function parseNumericLiteral(token) {
+  const shorthandMatch = token.match(/^(\d+(?:\.\d+)?)k$/u);
+  if (shorthandMatch) {
+    const value = Number(shorthandMatch[1]) * 1000;
+    return Number.isFinite(value) ? value : null;
+  }
   const cleaned = token.replace(/^₹|^rs\.?|^inr/i, "").replace(/,/g, "");
   if (!/^\d+(?:\.\d+)?$/u.test(cleaned)) return null;
   const value = Number(cleaned);

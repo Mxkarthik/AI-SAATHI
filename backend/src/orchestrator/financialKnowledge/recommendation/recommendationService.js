@@ -31,7 +31,12 @@ function buildRecommendation({ schemeId, decisionContext, eligibility }) {
     metadata,
   });
   const score = scoreFactors(matchedFactors);
-  const explanation = buildExplanationData({ metadata, factors: matchedFactors, eligibility });
+  const explanation = buildExplanationData({
+    metadata,
+    factors: matchedFactors,
+    eligibility,
+    language: decisionContext.language,
+  });
   const matched = matchedFactors.filter((factor) => factor.matched);
   const unmet = matchedFactors.filter((factor) => !factor.matched);
 
@@ -101,6 +106,7 @@ function buildRecommendations({ decisionContext, eligibility } = {}) {
 
   return {
     intent: classified.intent,
+    language: decisionContext.language === "te" ? "te" : "en",
     policyVersion: POLICY_VERSION,
     recommendations,
     verificationRequired: classified.requiresVerification.map(buildVerificationEntry),

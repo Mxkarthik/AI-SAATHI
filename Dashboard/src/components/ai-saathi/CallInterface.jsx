@@ -203,7 +203,30 @@ export default function CallInterface({ user, conversationId, welcomeInTelugu = 
         )}
         <div className="grid gap-4 lg:grid-cols-2">
           <AiParticipant aiState={loadingConversation ? "thinking" : aiState} />
-          <UserParticipant user={user} />
+          <UserParticipant
+            user={user}
+            controls={(
+              <CallControls
+                isMuted={false}
+                voiceStatus="disconnected"
+                recorderStatus={recorderStatus}
+                voiceState={voiceState}
+                disabled={microphoneLocked}
+                onToggleMute={() => {}}
+                onStartVoice={() => {
+                  unlockPlayback();
+                  startRecording();
+                }}
+                onStopVoice={stopRecording}
+                onLeave={() => {
+                  stopRecording();
+                  stopSpeaking();
+                  onLeave();
+                }}
+                onSettings={() => setSettingsOpen((value) => !value)}
+              />
+            )}
+          />
         </div>
         <CurrentMessage
           message={activeQuestion}
@@ -220,25 +243,6 @@ export default function CallInterface({ user, conversationId, welcomeInTelugu = 
         </div>
         <TranscriptPreview messages={messages} />
         <div className="flex flex-col items-center gap-3 border-t border-gray-800 pt-5">
-          <CallControls
-            isMuted={false}
-            voiceStatus="disconnected"
-            recorderStatus={recorderStatus}
-            voiceState={voiceState}
-            disabled={microphoneLocked}
-            onToggleMute={() => {}}
-            onStartVoice={() => {
-              unlockPlayback();
-              startRecording();
-            }}
-            onStopVoice={stopRecording}
-            onLeave={() => {
-              stopRecording();
-              stopSpeaking();
-              onLeave();
-            }}
-            onSettings={() => setSettingsOpen((value) => !value)}
-          />
           <p className="min-h-5 text-center text-xs text-gray-500" aria-live="polite">
             {settingsOpen ? t("schemeAI", "settingsComingSoon") : voiceError || t("schemeAI", "localPreview")}
           </p>

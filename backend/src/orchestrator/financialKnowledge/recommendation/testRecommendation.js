@@ -263,6 +263,38 @@ test("source references and structured explanations are preserved", () => {
   assert.ok(typeof recommendation.explanation.caution === "string");
 });
 
+test("recommendation explanations follow the decision-context language", () => {
+  const eligibility = {
+    schemeResults: ["kisan_credit_card", "agriculture_infrastructure_fund"].map((schemeId) => ({
+      schemeId,
+      status: schemeId === "kisan_credit_card" ? STATUS.ELIGIBLE : STATUS.INELIGIBLE,
+      verificationRequired: [],
+      sourceReferences: [`eligibility-source:${schemeId}`],
+    })),
+  };
+  const english = buildRecommendations({
+    decisionContext: context("equipment_financing", { language: "en" }),
+    eligibility,
+  });
+  const telugu = buildRecommendations({
+    decisionContext: context("equipment_financing", { language: "te" }),
+    eligibility,
+  });
+
+  assert.strictEqual(english.language, "en");
+  assert.strictEqual(telugu.language, "te");
+  assert.deepStrictEqual(
+    telugu.recommendations.map(({ schemeId, score, eligibilityStatus }) => ({ schemeId, score, eligibilityStatus })),
+    english.recommendations.map(({ schemeId, score, eligibilityStatus }) => ({ schemeId, score, eligibilityStatus }))
+  );
+  assert.ok(english.recommendations[0].explanation.whyRecommended[0].includes("scheme"));
+  assert.ok(telugu.recommendations[0].explanation.whyRecommended[0].includes("పథకం"));
+  assert.notStrictEqual(
+    telugu.recommendations[0].explanation.whyRecommended[0],
+    english.recommendations[0].explanation.whyRecommended[0]
+  );
+});
+
 test("recommendation evaluation does not mutate DecisionContext", () => {
   const decisionContext = context("equipment_financing");
   const before = JSON.stringify(decisionContext);

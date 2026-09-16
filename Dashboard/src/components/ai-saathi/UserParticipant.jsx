@@ -6,7 +6,7 @@ function getInitials(name) {
   return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 }
 
-export default function UserParticipant({ user }) {
+export default function UserParticipant({ user, controls = null }) {
   const { t } = useLanguage();
   const displayName = user?.name?.trim() || t("schemeAI", "you");
   const initials = getInitials(user?.name);
@@ -21,6 +21,7 @@ export default function UserParticipant({ user }) {
         <span className="h-2.5 w-2.5 rounded-full bg-gray-500" aria-hidden="true" />
         {t("schemeAI", "callConnected")}
       </span>
+      {controls && <div className="mt-8 w-full">{controls}</div>}
     </article>
   );
 }
